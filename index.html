@@ -18,8 +18,18 @@
 
     <!-- Load CSS -->
     <link rel="stylesheet" href="assets/main.css">
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="./assets/effects.js" defer></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker Registered'))
+                    .catch(err => console.log('Service Worker Failed', err));
+            });
+        }
+    </script>
 </head>
 
 <body class="animate-gradient min-h-screen">

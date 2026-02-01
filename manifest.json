@@ -1,0 +1,16 @@
+{
+    "name": "CareerSafe AI",
+    "short_name": "CareerSafe",
+    "description": "AI-Powered Career Safety Platform",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#4f46e5",
+    "icons": [
+        {
+            "src": "assets/icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
