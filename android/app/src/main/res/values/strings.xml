@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CareerSafe</string>
+    <string name="title_activity_main">CareerSafe</string>
+    <string name="package_name">io.careersafe.app</string>
+    <string name="custom_url_scheme">io.careersafe.app</string>
+</resources>

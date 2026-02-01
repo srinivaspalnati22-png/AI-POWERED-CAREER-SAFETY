@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Check | CareerSafe - AI Authenticity Verification</title>
+    <meta name="description"
+        content="Verify your resume authenticity and detect potential fraud using CareerSafe's AI-powered pattern analysis.">
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Load Scripts -->
+    <!-- Load Scripts -->
+    <link rel="stylesheet" href="/assets/main.css">
+    <script src="./assets/config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+</head>
+
+<body class="animate-gradient min-h-screen">
+    <!-- Loading Screen -->
+    <div id="pageLoader">
+        <div>
+            <div class="loader-spinner mx-auto"></div>
+            <p class="text-white text-xl font-semibold mt-6">Initializing Resume Tools...</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-10 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl sm:text-3xl font-bold gradient-text flex items-center gap-2">
+                    <span class="text-4xl">🛡️</span>
+                    <span>CareerSafe</span>
+                </h1>
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-medium">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-600 transition">Home</a>
+                    <a href="features.html" class="text-gray-700 hover:text-blue-600 transition">Features</a>
+                    <a href="analyze.html" class="text-gray-700 hover:text-blue-600 transition">Analyze</a>
+                    <a href="resume.html"
+                        class="text-blue-600 font-semibold hover:text-purple-600 transition">Resume</a>
+                    <a href="login.html"
+                        class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition shadow-lg"
+                        id="loginBtn">Get Started</a>
+                    <a href="dashboard.html"
+                        class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full font-semibold hover:from-purple-700 hover:to-pink-700 transition shadow-lg hidden"
+                        id="dashboardBtn">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Content -->
+    <div class="container mx-auto px-4 sm:px-10 py-12">
+        <div class="text-center mb-12 fade-up">
+            <h1 class="text-4xl sm:text-6xl font-black mb-6 text-white drop-shadow-2xl">
+                Resume <span class="gradient-text">Authenticity Check</span>
+            </h1>
+            <p class="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-lg">
+                Verify the integrity of professional resumes. Our AI detects inconsistencies, automated patterns, and
+                fraudulent claims in seconds.
+            </p>
+        </div>
+
+        <!-- Main Upload Section -->
+        <div class="glass rounded-[2rem] p-8 sm:p-12 mb-12 fade-up">
+            <div class="mb-10">
+                <h3 class="text-2xl font-black text-gray-800 mb-6 flex items-center gap-3">
+                    <span>📤</span> Upload Resume (PDF)
+                </h3>
+
+                <div class="relative group">
+                    <input type="file" id="resume" accept=".pdf" onchange="handleFileSelect(event)"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div id="dropZone"
+                        class="drop-zone rounded-[1.5rem] p-12 text-center border-gray-300 group-hover:border-blue-500 group-hover:bg-blue-50/50 transition duration-300">
+                        <div class="text-6xl mb-4 group-hover:scale-110 transition duration-300">📄</div>
+                        <p id="fileName" class="text-gray-600 font-bold text-lg">Click to browse or drag and drop your
+                            resume here</p>
+                        <p class="text-sm text-gray-400 mt-2 font-medium">Maximum file size: 5MB</p>
+                    </div>
+                </div>
+
+                <!-- Quick Test Buttons -->
+                <div class="mt-10">
+                    <p class="text-xs font-black text-gray-400 mb-4 uppercase tracking-widest">⚡ Quick Test Scenarios
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="simulateResumeCheck('authentic')"
+                            class="text-xs bg-white hover:bg-green-50 text-green-700 px-6 py-3 rounded-xl transition font-black shadow-sm hover:shadow-md border border-green-100 flex items-center gap-2">
+                            <span class="text-lg">✅</span> Authentic
+                        </button>
+                        <button onclick="simulateResumeCheck('suspicious')"
+                            class="text-xs bg-white hover:bg-yellow-50 text-yellow-700 px-6 py-3 rounded-xl transition font-black shadow-sm hover:shadow-md border border-yellow-100 flex items-center gap-2">
+                            <span class="text-lg">⚠️</span> Suspicious
+                        </button>
+                        <button onclick="simulateResumeCheck('high-risk')"
+                            class="text-xs bg-white hover:bg-red-50 text-red-700 px-6 py-3 rounded-xl transition font-black shadow-sm hover:shadow-md border border-red-100 flex items-center gap-2">
+                            <span class="text-lg">🚨</span> High Risk
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="uploadResume()"
+                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-5 rounded-[1.2rem] font-black text-xl hover:from-blue-700 hover:to-purple-700 transition transform hover:scale-[1.02] shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                id="analyzeBtn">
+                <span>🚀</span> Analyze Resume Now
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <section id="resultsSection" class="hidden glass rounded-[2rem] p-8 sm:p-12 fade-up mb-12">
+            <h3 class="text-3xl font-black text-gray-800 mb-8 flex items-center gap-3">
+                <span>🎯</span> Analysis Results
+            </h3>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+                <!-- Risk Chart -->
+                <div class="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 flex items-center justify-center">
+                    <div class="w-full max-w-[280px]">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Risk Details -->
+                <div id="riskDetails" class="space-y-6 flex flex-col justify-center"></div>
+            </div>
+
+            <!-- Detailed Analysis -->
+            <div id="detailedAnalysis" class="mt-8"></div>
+
+            <!-- Export Buttons -->
+            <div class="mt-12 flex flex-wrap gap-6">
+                <button onclick="exportResults()"
+                    class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-10 py-5 rounded-2xl font-black hover:shadow-2xl transition transform hover:scale-105 flex items-center gap-3">
+                    <span>📥</span> Export Audit Report
+                </button>
+                <button onclick="resetAnalysis()"
+                    class="glass text-gray-700 border border-gray-200 px-10 py-5 rounded-2xl font-black hover:bg-gray-50 transition transform hover:scale-105 flex items-center gap-3">
+                    <span>🔄</span> Analyze Another
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white/95 border-t border-gray-200 py-16 px-4 mt-12 text-center text-gray-400 text-sm font-medium">
+        &copy; 2024 CareerSafe. All rights reserved. 🛡️ Protecting Your Professional Journey.
+    </footer>
+
+    <script>
+        const API_BASE = CONFIG.API_BASE;
+        let chart;
+        let currentResult = null;
+
+        // Auth check
+        (function () {
+            try {
+                const user = localStorage.getItem('careersafe_user');
+                const loginBtn = document.getElementById('loginBtn');
+                const dashboardBtn = document.getElementById('dashboardBtn');
+                if (user && loginBtn && dashboardBtn) {
+                    loginBtn.classList.add('hidden');
+                    dashboardBtn.classList.remove('hidden');
+                }
+            } catch (e) {
+                console.warn('Auth check error:', e);
+            }
+        })();
+
+        // Hide loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('pageLoader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 300);
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    alert('Please upload a PDF file');
+                    return;
+                }
+                document.getElementById('fileName').textContent = `📄 Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        async function uploadResume() {
+            const fileInput = document.getElementById("resume");
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a PDF file first');
+                return;
+            }
+
+            const btn = document.getElementById('analyzeBtn');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loader-spinner !w-8 !h-8 mx-auto"></div>';
+
+            const formData = new FormData();
+            formData.append("resume", file);
+
+            try {
+                const res = await fetch(`${API_BASE}/resume-check`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Server error');
+                }
+
+                currentResult = data;
+                displayResults(data);
+
+                try {
+                    const stats = JSON.parse(localStorage.getItem('careersafe_stats') || '{"analysed":0}');
+                    stats.analysed++;
+                    localStorage.setItem('careersafe_stats', JSON.stringify(stats));
+                } catch (e) { }
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                alert('Analysis failed: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        }
+
+        function simulateResumeCheck(type) {
+            const data = {
+                'authentic': {
+                    risk_percentage: 12,
+                    risk_level: 'Low',
+                    message: 'Resume appears highly authentic with consistent job history and verifiable details.',
+                    positives: ['Consistent date ranges', 'Professional formatting', 'Verifiable skill progression', 'Contact info present'],
+                    reasons: [],
+                    word_count: 520,
+                    suggestions: ['Tailor your resume for each job', 'Keep your LinkedIn profile matching'],
+                    improvement_plan: ['Step 1: Network with peers', 'Step 2: Add certifications']
+                },
+                'suspicious': {
+                    risk_percentage: 42,
+                    risk_level: 'Medium',
+                    message: 'Areas of concern detected in skill descriptions and employment gaps.',
+                    positives: ['Education section found', 'Standard contact info'],
+                    reasons: ['Over-usage of trending keywords', 'Non-standard job titles', 'Vague achievement metrics'],
+                    word_count: 380,
+                    suggestions: ['Clarify employment gaps', 'Use standard job titles'],
+                    improvement_plan: ['Step 1: Rewrite job descriptions', 'Step 2: Add specific results']
+                },
+                'high-risk': {
+                    risk_percentage: 82,
+                    risk_level: 'High',
+                    message: 'Multiple major authenticity concerns detected. High likelihood of automated/fraudulent content.',
+                    positives: [],
+                    reasons: ['Plagiarized skill descriptions', 'Impossible career timelines', 'Artificial intelligence generated patterns', 'Known certification mills mentioned'],
+                    word_count: 210,
+                    suggestions: ['Complete redo recommended', 'Verify all work history dates'],
+                    improvement_plan: ['Step 1: Start fresh', 'Step 2: Get verifiable references']
+                }
+            }[type];
+
+            currentResult = data;
+            displayResults(data);
+        }
+
+        function displayResults(data) {
+            const section = document.getElementById('resultsSection');
+            section.classList.remove('hidden');
+            section.scrollIntoView({ behavior: 'smooth' });
+
+            const isHigh = data.risk_percentage >= 70;
+            const isMed = data.risk_percentage >= 30;
+            const riskColor = isHigh ? 'text-red-600' : isMed ? 'text-yellow-600' : 'text-green-600';
+
+            document.getElementById('riskDetails').innerHTML = `
+                <div class="border-b border-gray-100 pb-6">
+                    <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Risk Profile</p>
+                    <div class="flex items-center gap-6">
+                        <p class="text-7xl font-black ${riskColor}">${data.risk_percentage}%</p>
+                        <div>
+                            <div class="text-sm font-bold text-gray-500 uppercase">Level</div>
+                            <div class="text-2xl font-black ${riskColor}">${data.risk_level}</div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4 font-bold">Document Word Count: ${data.word_count || 0}</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-100 p-6 rounded-2xl">
+                    <p class="font-black text-gray-800 mb-2 uppercase text-xs tracking-widest">AI Audit Summary</p>
+                    <p class="text-gray-700 font-medium leading-relaxed">${data.message}</p>
+                </div>
+            `;
+
+            if (chart) chart.destroy();
+            chart = new Chart(document.getElementById('riskChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Risk', 'Authenticity'],
+                    datasets: [{
+                        data: [data.risk_percentage, 100 - data.risk_percentage],
+                        backgroundColor: [isHigh ? '#ef4444' : isMed ? '#f59e0b' : '#10b981', '#f1f5f9'],
+                        borderWidth: 0,
+                        cutout: '80%'
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            document.getElementById('detailedAnalysis').innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                    <div class="bg-red-50 border border-red-100 p-8 rounded-[2rem]">
+                        <h4 class="font-black text-red-900 mb-6 flex items-center gap-3"><span>🚩</span> Red Flags</h4>
+                        <ul class="space-y-4">
+                            ${(data.reasons && data.reasons.length > 0) ?
+                    data.reasons.map(r => `<li class="text-sm text-red-700 font-bold flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-400 shrink-0"></span> ${r}</li>`).join('') :
+                    '<li class="text-sm text-red-400 italic font-bold">No critical red flags detected.</li>'}
+                        </ul>
+                    </div>
+                    <div class="bg-green-50 border border-green-100 p-8 rounded-[2rem]">
+                        <h4 class="font-black text-green-900 mb-6 flex items-center gap-3"><span>✅</span> Positive Markers</h4>
+                        <ul class="space-y-4">
+                            ${(data.positives && data.positives.length > 0) ?
+                    data.positives.map(p => `<li class="text-sm text-green-700 font-bold flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"></span> ${p}</li>`).join('') :
+                    '<li class="text-sm text-green-400 italic font-bold">Limited positive markers detected.</li>'}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-12">
+                    <h3 class="text-3xl font-black text-gray-800 mb-8 flex items-center gap-3">
+                        <span>🚀</span> Professional Roadmap
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-blue-50 border border-blue-100 p-8 rounded-[2.5rem]">
+                            <h4 class="font-black text-blue-900 mb-6 flex items-center gap-3 uppercase text-xs tracking-widest">Smart Suggestions</h4>
+                            <ul class="space-y-4">
+                                ${(data.suggestions || []).map(s => `<li class="text-sm text-blue-700 font-bold flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span> ${s}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-100 p-8 rounded-[2.5rem]">
+                            <h4 class="font-black text-purple-900 mb-6 flex items-center gap-3 uppercase text-xs tracking-widest">Next Steps</h4>
+                            <ul class="space-y-4">
+                                ${(data.improvement_plan || []).map(step => `<li class="text-sm text-purple-700 font-bold flex items-start gap-3"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></span> ${step}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetAnalysis() {
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('resume').value = '';
+            document.getElementById('fileName').innerHTML = 'Click to browse or drag and drop your resume here';
+            document.getElementById('analyzeBtn').disabled = true;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function exportResults() {
+            if (!currentResult) return;
+            const blob = new Blob([JSON.stringify(currentResult, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `career-safe-resume-audit-${Date.now()}.json`;
+            a.click();
+        }
+    </script>
+</body>
+
+</html>

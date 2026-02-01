@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | CareerSafe - AI-Powered Career Safety</title>
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Load Scripts -->
+    <!-- Load Scripts -->
+    <link rel="stylesheet" href="/assets/main.css">
+    <script src="./assets/config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="animate-gradient min-h-screen flex items-center justify-center p-4">
+    <!-- Loading Screen -->
+    <div id="pageLoader">
+        <div>
+            <div class="loader-spinner mx-auto"></div>
+            <p class="text-white text-lg font-medium mt-4">Security Check...</p>
+        </div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="glass w-full max-w-md p-8 sm:p-12 rounded-[2rem] fade-in relative overflow-hidden">
+        <!-- Background decorative elements -->
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-purple-200 rounded-full blur-3xl opacity-50"></div>
+        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-200 rounded-full blur-3xl opacity-50"></div>
+
+        <div class="relative">
+            <div class="text-center mb-10">
+                <a href="index.html" class="inline-block mb-4">
+                    <span class="text-5xl">🛡️</span>
+                </a>
+                <h1 class="text-3xl font-black text-gray-800 mb-2">Welcome Back</h1>
+                <p class="text-gray-500 font-medium">Continue your safe career journey</p>
+            </div>
+
+            <!-- Social Login Buttons -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <button
+                    class="social-btn flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-gray-700 text-sm">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                    Google
+                </button>
+                <button
+                    class="social-btn flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-gray-700 text-sm">
+                    <img src="https://www.svgrepo.com/show/475661/linkedin-color.svg" class="w-5 h-5" alt="LinkedIn">
+                    LinkedIn
+                </button>
+            </div>
+
+            <div class="flex items-center gap-4 mb-8">
+                <div class="flex-1 h-px bg-gray-200"></div>
+                <span class="text-gray-400 text-xs font-bold uppercase tracking-widest">or email</span>
+                <div class="flex-1 h-px bg-gray-200"></div>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Work Email</label>
+                    <input type="email" id="email"
+                        class="w-full p-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none input-focus transition"
+                        placeholder="name@company.com" required>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700">Password</label>
+                        <a href="#" class="text-sm font-bold text-purple-600 hover:text-purple-700">Forgot?</a>
+                    </div>
+                    <input type="password" id="password"
+                        class="w-full p-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 placeholder-gray-400 focus:outline-none input-focus transition"
+                        placeholder="••••••••" required>
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" id="remember"
+                        class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300">
+                    <label for="remember" class="ml-2 text-sm font-medium text-gray-600">Keep me logged in</label>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-black text-lg hover:from-blue-700 hover:to-purple-700 transition transform hover:scale-[1.02] shadow-xl"
+                    id="loginButton">
+                    Sign In to Dashboard
+                </button>
+
+                <div class="text-center">
+                    <p
+                        class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest px-2 inline-block bg-white relative z-10">
+                        Demo Access</p>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button type="button" onclick="quickLogin()"
+                            class="text-purple-600 font-bold hover:text-purple-700 py-2 border-2 border-purple-100 rounded-xl hover:bg-purple-50 transition">
+                            🚀 Standard Demo Account
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="mt-10 text-center">
+                <p class="text-gray-500 font-medium">New to CareerSafe?
+                    <a href="#" class="text-purple-600 font-bold hover:underline">Create an account</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if already logged in
+        if (localStorage.getItem('careersafe_user')) {
+            window.location.href = 'index.html';
+        }
+
+        function quickLogin() {
+            document.getElementById('email').value = 'demo@careersafe.com';
+            document.getElementById('password').value = 'demo123';
+            handleLogin(new Event('submit'));
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginButton = document.getElementById('loginButton');
+
+            // Show loading
+            loginButton.disabled = true;
+            loginButton.innerHTML = '<div class="loader-spinner !w-6 !h-6 !border-2 !border-t-white mx-auto"></div>';
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Store user session
+            const userData = {
+                email: email,
+                name: email.split('@')[0],
+                loginTime: new Date().toISOString(),
+                avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`
+            };
+
+            localStorage.setItem('careersafe_user', JSON.stringify(userData));
+
+            // Initialize stats if not exists
+            if (!localStorage.getItem('careersafe_stats')) {
+                localStorage.setItem('careersafe_stats', JSON.stringify({
+                    analyses: 0,
+                    scams: 0,
+                    companies: 0,
+                    resumes: 0
+                }));
+            }
+
+            // Redirect to dashboard
+            window.location.href = 'dashboard.html';
+        }
+
+        // Hide loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('pageLoader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 300);
+        });
+    </script>
+</body>
+
+</html>

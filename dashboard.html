@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | CareerSafe - AI-Powered Career Protection</title>
+    <meta name="description"
+        content="Monitor your career safety with real-time analytics, scam detection insights, and personalized protection metrics.">
+
+    <!-- Preconnect to CDNs for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+    <!-- Load CSS first -->
+    <!-- Load CSS first -->
+    <link rel="stylesheet" href="/assets/main.css">
+    <!-- Load config first -->
+    <script src="./assets/config.js"></script>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Load effects.js asynchronously -->
+    <script src="./assets/effects.js" defer></script>
+</head>
+
+<body class="animate-gradient min-h-screen">
+    <!-- Loading Screen -->
+    <div id="pageLoader">
+        <div>
+            <div class="loader-spinner mx-auto"></div>
+            <p class="text-white text-xl font-semibold mt-6">Loading Your Dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-10 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl sm:text-3xl font-bold gradient-text flex items-center gap-2">
+                    <span class="text-4xl">🛡️</span>
+                    <span>CareerSafe</span>
+                </h1>
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-medium">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-600 transition">Home</a>
+                    <a href="features.html" class="text-gray-700 hover:text-blue-600 transition">Features</a>
+                    <a href="analyze.html" class="text-gray-700 hover:text-blue-600 transition">Analyze</a>
+                    <a href="resume.html" class="text-gray-700 hover:text-blue-600 transition">Resume</a>
+                    <div class="relative">
+                        <button onclick="toggleNotifications()"
+                            class="text-gray-700 hover:text-blue-600 transition relative">
+                            <span class="text-xl">🔔</span>
+                            <span id="notifBadge"
+                                class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center notification-badge">0</span>
+                        </button>
+                    </div>
+                    <button onclick="logout()"
+                        class="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-lg font-semibold hover:from-red-600 hover:to-pink-600 transition shadow-lg">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Notifications Panel -->
+    <div id="notificationsPanel"
+        class="hidden fixed right-4 top-20 glass-card rounded-2xl p-6 w-80 z-40 max-h-96 overflow-y-auto custom-scrollbar">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-gray-800">Notifications</h3>
+            <button onclick="toggleNotifications()" class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <div id="notificationsList" class="space-y-3">
+            <p class="text-sm text-gray-500 text-center py-4">No new notifications</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12 max-w-7xl">
+        <!-- Welcome Section with Safety Score -->
+        <section class="mb-8 fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <h2 class="text-4xl sm:text-5xl font-bold text-white mb-2 drop-shadow-lg" id="welcomeText">Welcome
+                        Back!</h2>
+                    <p class="text-white/90 text-lg">Your career protection command center</p>
+                    <div class="mt-6 flex flex-wrap gap-4">
+                        <div class="glass-card px-6 py-3 rounded-xl border-white/10">
+                            <p class="text-sm text-gray-400 font-medium">Last Login</p>
+                            <p class="font-bold text-white text-lg" id="lastLogin">Today</p>
+                        </div>
+                        <div class="glass-card px-6 py-3 rounded-xl border-white/10">
+                            <p class="text-sm text-gray-400 font-medium">Account Status</p>
+                            <p class="font-bold text-cyan-400 flex items-center gap-1 text-lg">
+                                <span class="text-xl">✓</span> Protected
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safety Score Widget -->
+                <div class="glass-card rounded-2xl p-6 text-center border-white/10">
+                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Your Safety Score</h3>
+                    <div class="relative inline-block">
+                        <svg class="progress-ring" width="120" height="120">
+                            <circle class="text-white/5" stroke-width="8" stroke="currentColor" fill="transparent"
+                                r="52" cx="60" cy="60" />
+                            <circle id="safetyScoreCircle" class="progress-ring-circle text-cyan-400 safety-score-glow"
+                                stroke-width="8" stroke-dasharray="326.73" stroke-dashoffset="0" stroke-linecap="round"
+                                stroke="currentColor" fill="transparent" r="52" cx="60" cy="60" />
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div>
+                                <div class="text-4xl font-black text-white" id="safetyScoreValue">95</div>
+                                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">/ 100</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-400">
+                        <span class="font-black text-cyan-400">EXCELLENT</span> — Protected
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Enhanced Stats Grid with Trends -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <div class="glass-card rounded-2xl p-6 stat-card fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Total Analyses</p>
+                        <p class="text-4xl font-black text-white" id="statAnalyses">0</p>
+                    </div>
+                    <div class="text-4xl opacity-50">🔍</div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/5 pt-4">
+                    <a href="analyze.html"
+                        class="text-blue-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Analyze
+                        Now →</a>
+                    <span class="text-xs font-black text-cyan-400" id="trendAnalyses">+0%</span>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 stat-card fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Threats Blocked</p>
+                        <p class="text-4xl font-black text-rose-500" id="statScams">0</p>
+                    </div>
+                    <div class="text-4xl opacity-50">⚠️</div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/5 pt-4">
+                    <a href="analyze.html"
+                        class="text-rose-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">View
+                        Threats →</a>
+                    <span class="text-xs font-black text-gray-400" id="trendScams">0%</span>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 stat-card fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Verified Companies
+                        </p>
+                        <p class="text-4xl font-black text-emerald-400" id="statCompanies">0</p>
+                    </div>
+                    <div class="text-4xl opacity-50">🏢</div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/5 pt-4">
+                    <a href="analyze.html"
+                        class="text-emerald-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Verify
+                        More →</a>
+                    <span class="text-xs font-black text-emerald-400" id="trendCompanies">+0%</span>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 stat-card fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Resume Scans</p>
+                        <p class="text-4xl font-black text-purple-400" id="statResumes">0</p>
+                    </div>
+                    <div class="text-4xl opacity-50">📄</div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/5 pt-4">
+                    <a href="resume.html"
+                        class="text-purple-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Scan
+                        Resume →</a>
+                    <span class="text-xs font-black text-purple-400" id="trendResumes">+0%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
+            <!-- Activity Chart -->
+            <div class="glass-card rounded-2xl p-6 fade-in h-min">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-black text-white uppercase tracking-wider">Activity Timeline</h3>
+                    <select id="chartTimeRange"
+                        class="text-xs border border-white/10 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-900/50 text-white font-bold backdrop-blur-md">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                    </select>
+                </div>
+                <div class="h-64 w-full">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Risk Distribution Chart -->
+            <div class="glass-card rounded-2xl p-6 fade-in h-min">
+                <h3 class="text-xl font-black text-white uppercase tracking-wider mb-6">Threat Analysis</h3>
+                <div class="h-64 w-full flex items-center justify-center">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Safety Tips Carousel -->
+        <section class="glass-card rounded-3xl p-6 sm:p-10 mb-8 fade-in border-white/10">
+            <h3 class="text-2xl font-black text-white mb-8 flex items-center gap-3">
+                <span class="text-3xl">🎯</span> Daily Safety Insights
+            </h3>
+            <div class="relative overflow-hidden">
+                <div id="tipsCarousel" class="flex transition-transform duration-500 ease-in-out">
+                    <!-- Tips will be inserted here -->
+                </div>
+                <div class="flex justify-center gap-2 mt-6">
+                    <button onclick="prevTip()"
+                        class="glass-card px-5 py-2.5 rounded-xl hover:bg-white transition shadow-sm">←</button>
+                    <button onclick="nextTip()"
+                        class="glass-card px-5 py-2.5 rounded-xl hover:bg-white transition shadow-sm">→</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Activity -->
+        <section class="glass-card rounded-3xl p-6 sm:p-10 mb-8 fade-in border-white/10">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-black text-white flex items-center gap-3">
+                    <span class="text-3xl">📊</span> Recent Activity
+                </h3>
+                <div class="flex gap-4">
+                    <button onclick="exportHistory()"
+                        class="text-xs text-blue-400 hover:text-white font-black uppercase tracking-widest transition-colors">Export</button>
+                    <button onclick="clearHistory()"
+                        class="text-xs text-rose-400 hover:text-white font-black uppercase tracking-widest transition-colors">Clear
+                        All</button>
+                </div>
+            </div>
+            <div id="activityList" class="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                <p class="text-gray-500 text-center py-8 italic">No recent activity. Start analyzing to see your history
+                    here!</p>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="glass-card rounded-3xl p-6 sm:p-10 fade-in border-white/10">
+            <h3 class="text-2xl font-black text-white mb-8 flex items-center gap-3">
+                <span class="text-3xl">⚡</span> Quick Actions
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <a href="analyze.html"
+                    class="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-8 rounded-[2rem] hover:from-blue-700 hover:to-blue-900 transition-all duration-300 transform hover:scale-105 text-center shadow-xl hover:shadow-2xl">
+                    <div class="text-5xl mb-4">🔍</div>
+                    <p class="font-bold text-xl">Analyze Job</p>
+                    <p class="text-xs mt-2 text-blue-100 opacity-80">Detect scams instantly</p>
+                </a>
+                <a href="analyze.html#company"
+                    class="bg-gradient-to-br from-green-600 to-green-800 text-white p-8 rounded-[2rem] hover:from-green-700 hover:to-green-900 transition-all duration-300 transform hover:scale-105 text-center shadow-xl hover:shadow-2xl">
+                    <div class="text-5xl mb-4">🏢</div>
+                    <p class="font-bold text-xl">Verify Company</p>
+                    <p class="text-xs mt-2 text-green-100 opacity-80">Check legitimacy</p>
+                </a>
+                <a href="resume.html"
+                    class="bg-gradient-to-br from-purple-600 to-purple-800 text-white p-8 rounded-[2rem] hover:from-purple-700 hover:to-purple-900 transition-all duration-300 transform hover:scale-105 text-center shadow-xl hover:shadow-2xl">
+                    <div class="text-5xl mb-4">📄</div>
+                    <p class="font-bold text-xl">Check Resume</p>
+                    <p class="text-xs mt-2 text-purple-100 opacity-80">Improve your resume</p>
+                </a>
+                <a href="analyze.html"
+                    class="bg-gradient-to-br from-pink-600 to-pink-800 text-white p-8 rounded-[2rem] hover:from-pink-700 hover:to-pink-900 transition-all duration-300 transform hover:scale-105 text-center shadow-xl hover:shadow-2xl">
+                    <div class="text-5xl mb-4">🤖</div>
+                    <p class="font-bold text-xl">Career Advice</p>
+                    <p class="text-xs mt-2 text-pink-100 opacity-80">AI-powered guidance</p>
+                </a>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let activityChart, riskChart;
+        let currentTipIndex = 0;
+        const safetyTips = [
+            { icon: "🚫", title: "Never Pay for Jobs", text: "Legitimate employers never ask for upfront fees, registration costs, or equipment deposits." },
+            { icon: "🔒", title: "Protect Your Data", text: "Never share SSN, bank details, or credit card info during initial job conversations." },
+            { icon: "✉️", title: "Verify Email Domains", text: "Always check that recruiter emails come from official company domains, not generic email services." },
+            { icon: "🔍", title: "Research Companies", text: "Look up companies on LinkedIn, Glassdoor, and official business registries before applying." }
+        ];
+
+        // Ensure loader is hidden even if scripts fail
+        const hideLoader = () => {
+            const loader = document.getElementById('pageLoader');
+            if (loader && !loader.classList.contains('hidden')) {
+                loader.classList.add('hidden');
+                setTimeout(() => loader.remove(), 500);
+            }
+        };
+
+        // Fallback loader removal after 3 seconds
+        setTimeout(hideLoader, 3000);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // Check auth
+                const user = localStorage.getItem('careersafe_user');
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                let userData = {};
+                try {
+                    userData = JSON.parse(user) || {};
+                } catch (e) {
+                    console.error("Auth data error", e);
+                }
+
+                const welcomeEl = document.getElementById('welcomeText');
+                if (welcomeEl) {
+                    welcomeEl.textContent = `Welcome back, ${userData.name || 'User'}!`;
+                }
+
+                // Initialize components safely
+                safeInit(loadStats);
+                safeInit(loadActivity);
+                safeInit(initCharts);
+                safeInit(updateSafetyScore);
+                safeInit(loadSafetyTips);
+                safeInit(updateNotifications);
+
+                // Auto-rotate tips
+                setInterval(nextTip, 5000);
+            } catch (err) {
+                console.error("Dashboard initialization failed:", err);
+            } finally {
+                // Always hide loader once initialization sequence completes (or fails)
+                setTimeout(hideLoader, 500);
+            }
+        });
+
+        function safeInit(fn) {
+            try {
+                fn();
+            } catch (e) {
+                console.warn(`Initialization step failed: ${fn.name}`, e);
+            }
+        }
+
+        function loadStats() {
+            const stats = JSON.parse(localStorage.getItem('careersafe_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
+            const prevStats = JSON.parse(localStorage.getItem('careersafe_prev_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
+
+            animateValue('statAnalyses', 0, stats.analyses || 0, 1000);
+            animateValue('statScams', 0, stats.scams || 0, 1000);
+            animateValue('statCompanies', 0, stats.companies || 0, 1000);
+            animateValue('statResumes', 0, stats.resumes || 0, 1000);
+
+            updateTrend('trendAnalyses', stats.analyses, prevStats.analyses);
+            updateTrend('trendScams', stats.scams, prevStats.scams);
+            updateTrend('trendCompanies', stats.companies, prevStats.companies);
+            updateTrend('trendResumes', stats.resumes, prevStats.resumes);
+        }
+
+        function updateTrend(elementId, current, previous) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            if (!previous || previous === 0) {
+                element.textContent = '+0%';
+                element.className = 'text-xs font-semibold trend-neutral';
+                return;
+            }
+
+            const change = Math.round(((current - previous) / previous) * 100);
+            element.textContent = `${change > 0 ? '+' : ''}${change}%`;
+            element.className = `text-xs font-semibold ${change > 0 ? 'trend-up' : change < 0 ? 'trend-down' : 'trend-neutral'}`;
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.textContent = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function updateSafetyScore() {
+            const stats = JSON.parse(localStorage.getItem('careersafe_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
+            let score = 100;
+            if (stats.analyses > 0) {
+                const scamRate = stats.scams / stats.analyses;
+                score = Math.max(50, Math.round(100 - (scamRate * 50)));
+            }
+            document.getElementById('safetyScoreValue').textContent = score;
+            const circle = document.getElementById('safetyScoreCircle');
+            if (circle) {
+                const circumference = 2 * Math.PI * 52;
+                circle.style.strokeDashoffset = circumference - (score / 100) * circumference;
+            }
+        }
+
+        function loadActivity() {
+            const history = JSON.parse(localStorage.getItem('careersafe_history') || '[]');
+            const activityList = document.getElementById('activityList');
+            if (!activityList) return;
+
+            if (history.length === 0) {
+                activityList.innerHTML = '<p class="text-gray-500 text-center py-8 italic font-medium">No recent activity. Start analyzing to see your history here!</p>';
+                return;
+            }
+
+            activityList.innerHTML = history.slice(0, 10).map(item => {
+                const risk = item.data?.risk_percentage ?? 'N/A';
+                const date = new Date(item.timestamp).toLocaleDateString();
+                const typeName = item.type.replace('_', ' ').toUpperCase();
+
+                return `
+                    <div class="glass-card p-5 rounded-2xl flex justify-between items-center hover:bg-white/5 transition-all border-white/5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-xl">
+                                ${typeName.includes('JOB') ? '🔍' : typeName.includes('COMPANY') ? '🏢' : '📄'}
+                            </div>
+                            <div>
+                                <p class="font-black text-white text-sm tracking-wide">${typeName}</p>
+                                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">${date}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest ${risk >= 70 ? 'bg-rose-500/20 text-rose-400' : risk >= 30 ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'} border border-current opacity-80">
+                                ${risk}% RISK
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function initCharts() {
+            if (typeof Chart === 'undefined') return;
+
+            const stats = JSON.parse(localStorage.getItem('careersafe_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
+
+            const ctx1 = document.getElementById('activityChart');
+            if (ctx1) {
+                Chart.defaults.color = '#94a3b8';
+                Chart.defaults.font.family = "'Outfit', sans-serif";
+
+                activityChart = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['ANALYSES', 'SCAMS', 'COMPANIES', 'RESUMES'],
+                        datasets: [{
+                            label: 'TOTAL',
+                            data: [stats.analyses, stats.scams, stats.companies, stats.resumes],
+                            backgroundColor: ['#6366f1', '#f43f5e', '#10b981', '#a855f7'],
+                            borderRadius: 12,
+                            barThickness: 20
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const ctx2 = document.getElementById('riskChart');
+            if (ctx2) {
+                riskChart = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['THREATS', 'SECURE'],
+                        datasets: [{
+                            data: [stats.scams, stats.analyses - stats.scams || 1],
+                            backgroundColor: ['#f43f5e', '#10b981'],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '80%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function loadSafetyTips() {
+            const carousel = document.getElementById('tipsCarousel');
+            if (!carousel) return;
+            carousel.innerHTML = safetyTips.map(tip => `
+                <div class="carousel-item min-w-full px-4">
+                    <div class="p-10 rounded-[2.5rem] bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border border-white/5 flex gap-8 items-center backdrop-blur-xl">
+                        <span class="text-7xl drop-shadow-[0_0_20px_rgba(99,102,241,0.5)]">${tip.icon}</span>
+                        <div>
+                            <h4 class="font-black text-white text-2xl mb-3 tracking-tight">${tip.title}</h4>
+                            <p class="text-gray-400 font-medium leading-relaxed">${tip.text}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function nextTip() {
+            currentTipIndex = (currentTipIndex + 1) % safetyTips.length;
+            const carousel = document.getElementById('tipsCarousel');
+            if (carousel) carousel.style.transform = `translateX(-${currentTipIndex * 100}%)`;
+        }
+
+        function prevTip() {
+            currentTipIndex = (currentTipIndex - 1 + safetyTips.length) % safetyTips.length;
+            const carousel = document.getElementById('tipsCarousel');
+            if (carousel) carousel.style.transform = `translateX(-${currentTipIndex * 100}%)`;
+        }
+
+        function updateNotifications() {
+            const badge = document.getElementById('notifBadge');
+            if (badge) badge.classList.add('hidden');
+        }
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notificationsPanel');
+            if (panel) panel.classList.toggle('hidden');
+        }
+
+        function logout() {
+            if (confirm('Logout?')) {
+                localStorage.removeItem('careersafe_user');
+                window.location.href = 'login.html';
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('Clear history?')) {
+                localStorage.removeItem('careersafe_history');
+                localStorage.setItem('careersafe_stats', JSON.stringify({ analyses: 0, scams: 0, companies: 0, resumes: 0 }));
+                location.reload();
+            }
+        }
+
+        function exportHistory() {
+            const history = localStorage.getItem('careersafe_history') || '[]';
+            const blob = new Blob([history], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'careersafe_history.json';
+            a.click();
+        }
+    </script>
+</body>
+
+</html>

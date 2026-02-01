@@ -1,0 +1,35 @@
+{
+  "name": "careersafefinal",
+  "version": "1.0.0",
+  "description": "AI-Powered Career Safety Platform",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "python app.py",
+    "frontend": "vite",
+    "build": "vite build",
+    "setup": "npm install && pip install flask flask-cors pymupdf openai"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srinivaspalnati22-png/AI-POWERED-CAREER-SAFETY.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/srinivaspalnati22-png/AI-POWERED-CAREER-SAFETY/issues"
+  },
+  "homepage": "https://github.com/srinivaspalnati22-png/AI-POWERED-CAREER-SAFETY#readme",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.2",
+    "concurrently": "^9.2.1",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.2",
+    "@capacitor/cli": "^8.0.2",
+    "@capacitor/core": "^8.0.2"
+  }
+}

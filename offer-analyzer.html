@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offer Letter Analyzer | CareerSafe - AI-Powered Job Offer Verification</title>
+    <meta name="description"
+        content="Upload and analyze job offer letters for red flags, scams, and suspicious terms using AI-powered analysis.">
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Load Scripts -->
+    <link rel="stylesheet" href="/assets/main.css">
+    <link rel="stylesheet" href="./assets/animations.css">
+    <script src="./assets/config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .upload-zone {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone.dragover {
+            border-color: #667eea;
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #pageLoader {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        #pageLoader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Screen -->
+    <div id="pageLoader">
+        <div>
+            <div class="loader-spinner mx-auto"></div>
+            <p class="text-white text-xl font-semibold mt-6">Loading Offer Analyzer...</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-10 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl sm:text-3xl font-bold gradient-text flex items-center gap-2">
+                    <span class="text-4xl">🛡️</span>
+                    <span>CareerSafe</span>
+                </h1>
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-medium">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-600 transition">Home</a>
+                    <a href="features.html" class="text-gray-700 hover:text-blue-600 transition">Features</a>
+                    <a href="analyze.html" class="text-gray-700 hover:text-blue-600 transition">Analyze</a>
+                    <a href="offer-analyzer.html"
+                        class="text-blue-600 font-semibold hover:text-purple-600 transition">Offer Analyzer</a>
+                    <a href="resume.html" class="text-gray-700 hover:text-blue-600 transition">Resume</a>
+                    <a href="login.html"
+                        class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition shadow-lg"
+                        id="loginBtn">Get Started</a>
+                    <a href="dashboard.html"
+                        class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full font-semibold hover:from-purple-700 hover:to-pink-700 transition shadow-lg hidden"
+                        id="dashboardBtn">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 sm:px-10 py-12 max-w-5xl">
+        <!-- Hero Section -->
+        <div class="text-center mb-12 fade-in">
+            <div class="mb-4">
+                <span class="glass px-6 py-2 rounded-full text-sm font-semibold text-purple-700 inline-block">
+                    📝 AI-Powered Offer Letter Analysis
+                </span>
+            </div>
+            <h2 class="text-4xl sm:text-6xl font-black mb-6 text-white drop-shadow-2xl">
+                Offer Letter <span class="gradient-text">Analyzer</span>
+            </h2>
+            <p class="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-lg">
+                Upload your job offer letter and get instant AI-powered analysis for red flags, suspicious terms, and
+                scam indicators
+            </p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="glass rounded-3xl p-8 sm:p-12 mb-8 fade-in">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                <span>📤</span> Upload Offer Letter
+            </h3>
+
+            <!-- File Upload Zone -->
+            <div id="uploadZone" class="upload-zone rounded-2xl p-12 text-center mb-6 cursor-pointer">
+                <div class="text-6xl mb-4">📄</div>
+                <p class="text-lg font-semibold text-gray-800 mb-2">Drag & drop your offer letter here</p>
+                <p class="text-gray-600 mb-4">or click to browse</p>
+                <p class="text-sm text-gray-500">Supports PDF, DOCX, TXT files (Max 10MB)</p>
+                <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" class="hidden">
+            </div>
+
+            <!-- Or divider -->
+            <div class="flex items-center gap-4 mb-6">
+                <div class="flex-1 h-px bg-gray-300"></div>
+                <span class="text-gray-500 font-semibold">OR</span>
+                <div class="flex-1 h-px bg-gray-300"></div>
+            </div>
+
+            <!-- Text Input -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Paste offer letter text</label>
+                <textarea id="textInput"
+                    class="w-full border-2 border-gray-300 bg-white text-gray-800 p-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y min-h-[200px]"
+                    placeholder="Paste your complete offer letter text here..."></textarea>
+            </div>
+
+            <!-- Selected File Display -->
+            <div id="selectedFile" class="hidden mb-6">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">📎</span>
+                        <div>
+                            <p class="font-semibold text-gray-800" id="fileName"></p>
+                            <p class="text-sm text-gray-600" id="fileSize"></p>
+                        </div>
+                    </div>
+                    <button onclick="clearFile()" class="text-red-600 hover:text-red-700 font-semibold">Remove</button>
+                </div>
+            </div>
+
+            <!-- Quick Test Buttons -->
+            <div class="mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                <p class="text-sm font-bold text-gray-700 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <span>⚡</span> Quick Test Cases
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="simulateOfferAnalysis('safe')"
+                        class="text-xs bg-white hover:bg-green-50 text-green-700 px-6 py-3 rounded-xl transition font-bold shadow-sm hover:shadow-md border border-green-200 flex items-center gap-2">
+                        <span class="text-lg">✅</span> Legitimate Offer
+                    </button>
+                    <button onclick="simulateOfferAnalysis('suspicious')"
+                        class="text-xs bg-white hover:bg-yellow-50 text-yellow-700 px-6 py-3 rounded-xl transition font-bold shadow-sm hover:shadow-md border border-yellow-200 flex items-center gap-2">
+                        <span class="text-lg">⚠️</span> Suspicious Terms
+                    </button>
+                    <button onclick="simulateOfferAnalysis('scam')"
+                        class="text-xs bg-white hover:bg-red-50 text-red-700 px-6 py-3 rounded-xl transition font-bold shadow-sm hover:shadow-md border border-red-200 flex items-center gap-2">
+                        <span class="text-lg">🚨</span> Advance Fee Scam
+                    </button>
+                </div>
+            </div>
+
+            <!-- Analyze Button -->
+            <button onclick="analyzeOffer()" id="analyzeBtn"
+                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-black text-lg hover:from-blue-700 hover:to-purple-700 transition transform hover:scale-[1.02] shadow-xl">
+                Analyze Offer Letter Now
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden fade-in">
+            <!-- Risk Score Card -->
+            <div class="glass rounded-3xl p-8 mb-6">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                    <span>🎯</span> Analysis Results
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Risk Score -->
+                    <div
+                        class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 text-center border border-gray-200">
+                        <p class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Risk Score</p>
+                        <p class="text-6xl font-black mb-2" id="riskScore">0</p>
+                        <p class="text-lg font-semibold" id="riskLevel">-</p>
+                    </div>
+
+                    <!-- Word Count -->
+                    <div
+                        class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 text-center border border-blue-200">
+                        <p class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Word Count</p>
+                        <p class="text-4xl font-black text-blue-700 mb-2" id="wordCount">0</p>
+                        <p class="text-sm text-gray-600">words analyzed</p>
+                    </div>
+
+                    <!-- Document Quality -->
+                    <div
+                        class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 text-center border border-purple-200">
+                        <p class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Document Quality</p>
+                        <p class="text-4xl font-black text-purple-700 mb-2" id="docQuality">-</p>
+                        <p class="text-sm text-gray-600">professionalism</p>
+                    </div>
+                </div>
+
+                <!-- Recommendation -->
+                <div id="recommendation" class="rounded-xl p-6 mb-6">
+                    <p class="text-lg font-semibold" id="recommendationText"></p>
+                </div>
+
+                <!-- Details Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Red Flags -->
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <span>🚩</span> Red Flags Found
+                        </h4>
+                        <div class="space-y-2" id="redFlags"></div>
+                    </div>
+
+                    <!-- Positive Indicators -->
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <span>✅</span> Positive Indicators
+                        </h4>
+                        <div class="space-y-2" id="positiveIndicators"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety Tips -->
+            <div class="glass rounded-3xl p-8">
+                <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>💡</span> Safety Recommendations
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="safetyTips"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = CONFIG.API_BASE;
+        let selectedFile = null;
+
+        // Auth check
+        (function () {
+            try {
+                const user = localStorage.getItem('careersafe_user');
+                const loginBtn = document.getElementById('loginBtn');
+                const dashboardBtn = document.getElementById('dashboardBtn');
+                if (user && loginBtn && dashboardBtn) {
+                    loginBtn.classList.add('hidden');
+                    dashboardBtn.classList.remove('hidden');
+                }
+            } catch (e) {
+                console.warn('Auth check error:', e);
+            }
+        })();
+
+        // Hide loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('pageLoader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 300);
+        });
+
+        // Upload zone functionality
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('File size exceeds 10MB limit');
+                return;
+            }
+
+            const allowedTypes = ['.pdf', '.docx', '.doc', '.txt'];
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowedTypes.includes(fileExt)) {
+                alert('Please upload PDF, DOCX, or TXT files only');
+                return;
+            }
+
+            selectedFile = file;
+            document.getElementById('selectedFile').classList.remove('hidden');
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+
+            // Clear text input
+            document.getElementById('textInput').value = '';
+        }
+
+        function clearFile() {
+            selectedFile = null;
+            document.getElementById('selectedFile').classList.add('hidden');
+            fileInput.value = '';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function simulateOfferAnalysis(type) {
+            const data = {
+                'safe': {
+                    risk_score: 15,
+                    risk_level: 'Low',
+                    risk_color: 'green',
+                    recommendation: '✅ This offer appears legitimate. However, always verify directly with the company\'s official HR department before sharing sensitive data.',
+                    red_flags: [],
+                    positive_indicators: [
+                        'Professional formatting and language',
+                        'Clear compensation and benefits breakdown',
+                        'Standard legal clauses included',
+                        'Verifiable company details found'
+                    ],
+                    safety_tips: [
+                        'Verify the sender\'s email domain matches the official company website',
+                        'Call the company\'s official HR number to confirm the offer'
+                    ],
+                    word_count: 850,
+                    document_quality: {
+                        has_company_letterhead: true,
+                        has_signature: true,
+                        has_contact_info: true,
+                        professional_format: true
+                    }
+                },
+                'suspicious': {
+                    risk_score: 45,
+                    risk_level: 'Medium',
+                    risk_color: 'yellow',
+                    recommendation: '⚠️ Proceed with caution. Some terms in this offer are vague or inconsistent with industry standards.',
+                    red_flags: [
+                        'Vague job responsibilities',
+                        'Salary significantly above market average for the role',
+                        'Pressure to accept the offer within hours'
+                    ],
+                    positive_indicators: [
+                        'Professional contact information present',
+                        'Standard legal terminology used'
+                    ],
+                    safety_tips: [
+                        'Requested a detailed breakdown of the role and team',
+                        'Check Glassdoor and LinkedIn for the hiring manager\'s profile',
+                        'Do not pay any "processing" or "equipment" fees'
+                    ],
+                    word_count: 420,
+                    document_quality: {
+                        has_company_letterhead: false,
+                        has_signature: true,
+                        has_contact_info: true,
+                        professional_format: true
+                    }
+                },
+                'scam': {
+                    risk_score: 85,
+                    risk_level: 'High',
+                    risk_color: 'red',
+                    recommendation: '🚨 HIGH RISK DETECTED. This offer contains patterns typical of recruitment scams. Do not provide any personal or financial information.',
+                    red_flags: [
+                        'Request for advance payment for "home office equipment"',
+                        'Interview conducted via chat only (Telegram/WhatsApp)',
+                        'Sender email domain does not match official company domain',
+                        'Grammatical errors and unprofessional language'
+                    ],
+                    positive_indicators: [],
+                    safety_tips: [
+                        'BLOCK the sender immediately',
+                        'Report this scam to your local cybercrime authority',
+                        'Never send money to an employer'
+                    ],
+                    word_count: 280,
+                    document_quality: {
+                        has_company_letterhead: false,
+                        has_signature: false,
+                        has_contact_info: false,
+                        professional_format: false
+                    }
+                }
+            }[type];
+
+            displayResults(data);
+        }
+
+        async function analyzeOffer() {
+            const textInput = document.getElementById('textInput').value.trim();
+            const btn = document.getElementById('analyzeBtn');
+            const originalText = btn.textContent;
+
+            // Validation
+            if (!selectedFile && !textInput) {
+                alert('Please upload a file or paste offer letter text');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+            try {
+                let response;
+
+                if (selectedFile) {
+                    // Upload file
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+
+                    response = await fetch(API_BASE + '/analyze-offer-letter', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // Send text
+                    response = await fetch(API_BASE + '/analyze-offer-letter', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text: textInput })
+                    });
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Analysis failed');
+                }
+
+                const result = await response.json();
+                displayResults(result);
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        function displayResults(data) {
+            // Show results section
+            document.getElementById('results').classList.remove('hidden');
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+            // Risk Score
+            const riskScore = data.risk_score;
+            const riskLevel = data.risk_level;
+            const riskColor = data.risk_color;
+
+            document.getElementById('riskScore').textContent = riskScore + '%';
+            document.getElementById('riskScore').className = 'text-6xl font-black mb-2 ' +
+                (riskColor === 'red' ? 'text-red-600' : riskColor === 'yellow' ? 'text-yellow-600' : 'text-green-600');
+            document.getElementById('riskLevel').textContent = riskLevel + ' Risk';
+            document.getElementById('riskLevel').className = 'text-lg font-semibold ' +
+                (riskColor === 'red' ? 'text-red-600' : riskColor === 'yellow' ? 'text-yellow-600' : 'text-green-600');
+
+            // Word Count
+            document.getElementById('wordCount').textContent = data.word_count.toLocaleString();
+
+            // Document Quality
+            const quality = data.document_quality;
+            const qualityScore = [quality.has_company_letterhead, quality.has_signature,
+            quality.has_contact_info, quality.professional_format].filter(Boolean).length;
+            document.getElementById('docQuality').textContent = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][qualityScore];
+
+            // Recommendation
+            const recCard = document.getElementById('recommendation');
+            recCard.className = 'rounded-xl p-6 mb-6 ' +
+                (riskColor === 'red' ? 'bg-red-50 border border-red-200' :
+                    riskColor === 'yellow' ? 'bg-yellow-50 border border-yellow-200' :
+                        'bg-green-50 border border-green-200');
+            document.getElementById('recommendationText').textContent = data.recommendation;
+            document.getElementById('recommendationText').className = 'text-lg font-semibold ' +
+                (riskColor === 'red' ? 'text-red-700' : riskColor === 'yellow' ? 'text-yellow-700' : 'text-green-700');
+
+            // Red Flags
+            const redFlagsDiv = document.getElementById('redFlags');
+            redFlagsDiv.innerHTML = data.red_flags.map(flag =>
+                `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">${flag}</div>`
+            ).join('');
+
+            // Positive Indicators
+            const positiveDiv = document.getElementById('positiveIndicators');
+            positiveDiv.innerHTML = data.positive_indicators.map(indicator =>
+                `<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">${indicator}</div>`
+            ).join('');
+
+            // Safety Tips
+            const tipsDiv = document.getElementById('safetyTips');
+            tipsDiv.innerHTML = data.safety_tips.map(tip =>
+                `<div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700 flex items-start gap-2">
+                    <span class="text-blue-500 mt-0.5">💡</span> ${tip}
+                </div>`
+            ).join('');
+        }
+    </script>
+</body>
+
+</html>

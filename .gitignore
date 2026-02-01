@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+*.log
+
+# Node
+node_modules/
+node_modules_frontend/
+dist/
+build/
+.DS_Store
+
+# Android / Capacitor build artifacts
+android/build/
+android/.gradle/
+android/app/build/
+node_modules_frontend/@capacitor/android/capacitor/build/
+
+# Other
+test_company_verify_final.py
+final_test_output.txt
+debug.log

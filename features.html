@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features | CareerSafe - AI-Powered Career Protection</title>
+    <meta name="description"
+        content="Discover CareerSafe's powerful AI features: job scam detection, company verification, resume analysis, and career guidance.">
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+
+    <!-- Load CSS -->
+    <!-- Load CSS -->
+    <link rel="stylesheet" href="/assets/main.css">
+    <script src="./assets/config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./assets/effects.js" defer></script>
+</head>
+
+<body class="animate-gradient min-h-screen">
+    <!-- Loading Screen -->
+    <div id="pageLoader">
+        <div>
+            <div class="loader-spinner mx-auto"></div>
+            <p class="text-white text-xl font-semibold mt-6">Discovering Features...</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-10 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl sm:text-3xl font-bold gradient-text flex items-center gap-2">
+                    <span class="text-4xl">🛡️</span>
+                    <span>CareerSafe</span>
+                </h1>
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-medium">
+                    <a href="index.html" class="text-gray-700 hover:text-blue-600 transition">Home</a>
+                    <a href="features.html"
+                        class="text-blue-600 font-semibold hover:text-purple-600 transition">Features</a>
+                    <a href="analyze.html" class="text-gray-700 hover:text-blue-600 transition">Analyze</a>
+                    <a href="resume.html" class="text-gray-700 hover:text-blue-600 transition">Resume</a>
+                    <a href="login.html"
+                        class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition shadow-lg"
+                        id="loginBtn">Get Started</a>
+                    <a href="dashboard.html"
+                        class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full font-semibold hover:from-purple-700 hover:to-pink-700 transition shadow-lg hidden"
+                        id="dashboardBtn">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero section of features -->
+    <section class="container mx-auto px-4 sm:px-10 py-20 text-center fade-in">
+        <h1 class="text-5xl sm:text-7xl font-black mb-6 text-white drop-shadow-2xl">
+            Unrivaled <span class="gradient-text">Protection</span>
+        </h1>
+        <p class="text-xl text-white/90 max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
+            Our modular platform provides enterprise-grade security tools to protect job seekers at every stage of their
+            career journey.
+        </p>
+    </section>
+
+    <!-- Detailed Features Grid -->
+    <section class="container mx-auto px-4 sm:px-10 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            <!-- Job Scam Detection -->
+            <div class="glass hover-card rounded-[3rem] p-10 feature-card">
+                <div
+                    class="bg-blue-100 w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-8 feature-icon">
+                    🚨
+                </div>
+                <h3 class="text-2xl font-black text-gray-800 mb-4">Job Risk Analysis</h3>
+                <p class="text-gray-600 leading-relaxed font-medium">
+                    Using advanced natural language processing, we scan job descriptions for 200+ known recruitment scam
+                    patterns, predatory clauses, and suspicious formatting.
+                </p>
+            </div>
+
+            <!-- Company Verification -->
+            <div class="glass hover-card rounded-[3rem] p-10 feature-card">
+                <div
+                    class="bg-green-100 w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-8 feature-icon">
+                    💎
+                </div>
+                <h3 class="text-2xl font-black text-gray-800 mb-4">Company Verify</h3>
+                <p class="text-gray-600 leading-relaxed font-medium">
+                    Automatically verify company registrations, digital history, and domain authenticity. Connects with
+                    global business registries to ensure you're talking to the real deal.
+                </p>
+            </div>
+
+            <!-- AI Guideline -->
+            <div class="glass hover-card rounded-[3rem] p-10 feature-card">
+                <div
+                    class="bg-purple-100 w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-8 feature-icon">
+                    ✨
+                </div>
+                <h3 class="text-2xl font-black text-gray-800 mb-4">AI Career Path</h3>
+                <p class="text-gray-600 leading-relaxed font-medium">
+                    Personalized career roadmap generation based on your current skills. Discover high-growth industries
+                    and the exact tools you need to master to stay ahead.
+                </p>
+            </div>
+
+            <!-- Resume Integrity -->
+            <div class="glass hover-card rounded-[3rem] p-10 feature-card">
+                <div
+                    class="bg-pink-100 w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-8 feature-icon">
+                    🧬
+                </div>
+                <h3 class="text-2xl font-black text-gray-800 mb-4">Resume Check</h3>
+                <p class="text-gray-600 leading-relaxed font-medium">
+                    Verify the authenticity of your own or potential candidate resumes. Detects AI inconsistencies and
+                    ensures professional standards are met for high-end roles.
+                </p>
+            </div>
+
+
+            <!-- Technical Protection -->
+            <div class="glass hover-card rounded-[3rem] p-10 feature-card">
+                <div
+                    class="bg-orange-100 w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-8 feature-icon">
+                    🛡️
+                </div>
+                <h3 class="text-2xl font-black text-gray-800 mb-4">Safe Search</h3>
+                <p class="text-gray-600 leading-relaxed font-medium">
+                    Integrated protection that monitors your session for phishing attempts and fraudulent website
+                    redirects during your job search process.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="container mx-auto px-4 sm:px-10 py-24">
+        <div class="glass rounded-[3.5rem] p-12 sm:p-24 text-center relative overflow-hidden">
+            <div class="absolute -top-20 -left-20 w-80 h-80 bg-blue-100 rounded-full blur-[100px] opacity-40"></div>
+            <div class="absolute -bottom-20 -right-20 w-80 h-80 bg-purple-100 rounded-full blur-[100px] opacity-40">
+            </div>
+
+            <h2 class="text-4xl sm:text-6xl font-black text-gray-800 mb-8 relative z-10">Ready to secure your <span
+                    class="gradient-text">future?</span></h2>
+            <p class="text-xl text-gray-500 max-w-2xl mx-auto mb-12 font-medium relative z-10">
+                Join thousands of professionals who use CareerSafe to navigate their career with complete peace of mind.
+            </p>
+            <div class="flex flex-wrap justify-center gap-6 relative z-10">
+                <a href="login.html"
+                    class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-12 py-5 rounded-2xl font-black text-xl hover:shadow-2xl transition transform hover:scale-105">Get
+                    Started Free</a>
+                <a href="analyze.html"
+                    class="glass border border-gray-200 text-gray-800 px-12 py-5 rounded-2xl font-black text-xl hover:bg-white/20 transition transform hover:scale-105">Analyze
+                    Now</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-white/95 border-t border-gray-100 py-16 px-4 mt-12 text-center text-gray-400 text-sm font-medium">
+        &copy; 2024 CareerSafe. All rights reserved. 🛡️ Protecting Your Professional Journey.
+    </footer>
+
+    <script>
+        // Auth check
+        (function () {
+            const user = localStorage.getItem('careersafe_user');
+            const loginBtn = document.getElementById('loginBtn');
+            const dashboardBtn = document.getElementById('dashboardBtn');
+            if (user && loginBtn && dashboardBtn) {
+                loginBtn.classList.add('hidden');
+                dashboardBtn.classList.remove('hidden');
+            }
+        })();
+
+        // Page Loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('pageLoader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 300);
+        });
+    </script>
+</body>
+
+</html>
