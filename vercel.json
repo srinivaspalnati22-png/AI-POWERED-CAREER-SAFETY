@@ -2,6 +2,10 @@
     "version": 2,
     "builds": [
         {
+            "src": "app.py",
+            "use": "@vercel/python"
+        },
+        {
             "src": "*.html",
             "use": "@vercel/static"
         },
@@ -11,6 +15,22 @@
         }
     ],
     "routes": [
+        {
+            "src": "/analyze",
+            "dest": "/app.py"
+        },
+        {
+            "src": "/career-guidance",
+            "dest": "/app.py"
+        },
+        {
+            "src": "/resume-check",
+            "dest": "/app.py"
+        },
+        {
+            "src": "/health",
+            "dest": "/app.py"
+        },
         {
             "src": "/assets/(.*)",
             "dest": "/assets/$1"

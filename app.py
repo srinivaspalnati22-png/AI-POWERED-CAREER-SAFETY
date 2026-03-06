@@ -33,12 +33,11 @@ if GEMINI_API_KEY:
 else:
     print("WARNING: GEMINI_API_KEY not set. Set with: export GEMINI_API_KEY='your-key-here'")
 
-# Setup logging with better format and rotation
+# Setup logging with better format
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        RotatingFileHandler('app.log', maxBytes=10485760, backupCount=5),
         logging.StreamHandler()
     ]
 )
