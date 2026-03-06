@@ -78,13 +78,7 @@ CORS(app,
      supports_credentials=False,
      max_age=86400)
 
-@app.route('/health')
-def health():
-    return jsonify({"status": "ok", "service": "CareerSafe API"}), 200
 
-@app.route('/')
-def home():
-    return jsonify({"status": "ok", "message": "CareerSafe Backend API", "docs": "/health"})
 
 # Default test data for easy testing
 DEFAULT_TEST_DATA = {
