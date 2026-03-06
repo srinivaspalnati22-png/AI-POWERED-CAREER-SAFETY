@@ -39,7 +39,8 @@
                     <span class="text-4xl">🛡️</span>
                     <span>CareerSafe</span>
                 </h1>
-                <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-medium">
+                <div
+                    class="desktop-nav-links flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-medium">
                     <a href="index.html" class="text-gray-700 hover:text-blue-600 transition">Home</a>
                     <a href="features.html" class="text-gray-700 hover:text-blue-600 transition">Features</a>
                     <a href="analyze.html" class="text-gray-700 hover:text-blue-600 transition">Analyze</a>
@@ -52,20 +53,44 @@
                         class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full font-semibold hover:from-purple-700 hover:to-pink-700 transition shadow-lg hidden"
                         id="dashboardBtn">Dashboard</a>
                 </div>
+                <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
             </div>
         </div>
     </nav>
 
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <nav class="mobile-nav-drawer" id="mobileNavDrawer">
+        <a href="index.html">🏠 Home</a>
+        <a href="features.html">✨ Features</a>
+        <a href="analyze.html">🔍 Analyze</a>
+        <a href="resume.html">📄 Resume</a>
+        <a href="login.html" class="mobile-cta" id="mobileLoginBtn">Get Started</a>
+        <a href="dashboard.html" class="mobile-cta hidden" id="mobileDashboardBtn">Dashboard</a>
+    </nav>
+
     <!-- Hero Content -->
     <div class="container mx-auto px-4 sm:px-10 py-12">
-        <div class="text-center mb-12 fade-up">
-            <h1 class="text-4xl sm:text-6xl font-black mb-6 text-white drop-shadow-2xl">
-                Resume <span class="gradient-text">Authenticity Check</span>
-            </h1>
-            <p class="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-lg">
-                Verify the integrity of professional resumes. Our AI detects inconsistencies, automated patterns, and
-                fraudulent claims in seconds.
-            </p>
+        <div class="flex flex-col md:flex-row items-center justify-between gap-12 mb-16 fade-up">
+            <div class="md:w-1/2 text-left">
+                <h1 class="text-4xl sm:text-6xl font-black mb-6 text-white drop-shadow-2xl lg:leading-tight">
+                    Resume <span class="gradient-text">Authenticity Check</span>
+                </h1>
+                <p class="text-xl text-white/90 leading-relaxed drop-shadow-lg font-medium">
+                    Verify the integrity of professional resumes. Our AI detects inconsistencies, automated patterns,
+                    and
+                    fraudulent claims in seconds.
+                </p>
+            </div>
+            <div class="md:w-1/2 flex justify-center floating hero-image-animate relative">
+                <div class="absolute inset-0 bg-purple-500/20 blur-[100px] rounded-full mix-blend-overlay"></div>
+                <img src="assets/images/feature_resume_check_1772725790036.png" alt="AI Resume Analysis"
+                    class="w-full max-w-[450px] object-contain rounded-[3rem] shadow-[0_20px_50px_rgba(168,85,247,0.4)] border border-purple-500/30 relative z-10 transition-all duration-300">
+            </div>
         </div>
 
         <!-- Main Upload Section -->
@@ -166,9 +191,13 @@
                 const user = localStorage.getItem('careersafe_user');
                 const loginBtn = document.getElementById('loginBtn');
                 const dashboardBtn = document.getElementById('dashboardBtn');
-                if (user && loginBtn && dashboardBtn) {
-                    loginBtn.classList.add('hidden');
-                    dashboardBtn.classList.remove('hidden');
+                const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+                const mobileDashboardBtn = document.getElementById('mobileDashboardBtn');
+                if (user) {
+                    if (loginBtn) loginBtn.classList.add('hidden');
+                    if (dashboardBtn) dashboardBtn.classList.remove('hidden');
+                    if (mobileLoginBtn) mobileLoginBtn.classList.add('hidden');
+                    if (mobileDashboardBtn) mobileDashboardBtn.classList.remove('hidden');
                 }
             } catch (e) {
                 console.warn('Auth check error:', e);
@@ -185,6 +214,30 @@
                 }
             }, 300);
         });
+
+        // Hamburger menu
+        (function () {
+            const btn = document.getElementById('hamburgerBtn');
+            const drawer = document.getElementById('mobileNavDrawer');
+            const overlay = document.getElementById('mobileNavOverlay');
+            if (!btn) return;
+            function openMenu() {
+                btn.classList.add('open');
+                drawer.classList.add('open');
+                overlay.style.display = 'block';
+                requestAnimationFrame(() => overlay.classList.add('open'));
+                document.body.style.overflow = 'hidden';
+            }
+            function closeMenu() {
+                btn.classList.remove('open');
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                document.body.style.overflow = '';
+            }
+            btn.addEventListener('click', () => btn.classList.contains('open') ? closeMenu() : openMenu());
+            overlay.addEventListener('click', closeMenu);
+        })();
 
         function handleFileSelect(event) {
             const file = event.target.files[0];

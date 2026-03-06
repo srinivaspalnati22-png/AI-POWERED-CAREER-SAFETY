@@ -29,7 +29,12 @@
     <script src="./assets/effects.js" defer></script>
 </head>
 
-<body class="animate-gradient min-h-screen">
+<body class="bg-slate-950 min-h-screen text-white relative">
+    <!-- UI Background Layer -->
+    <div class="fixed inset-0 z-[-2] bg-cover bg-center"
+        style="background-image: url('assets/images/dashboard_bg_1772726723498.png');"></div>
+    <div class="fixed inset-0 z-[-1] bg-slate-950/80 backdrop-blur-[40px]"></div>
+
     <!-- Loading Screen -->
     <div id="pageLoader">
         <div>
@@ -46,14 +51,15 @@
                     <span class="text-4xl">🛡️</span>
                     <span>CareerSafe</span>
                 </h1>
-                <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-medium">
-                    <a href="index.html" class="text-gray-700 hover:text-blue-600 transition">Home</a>
-                    <a href="features.html" class="text-gray-700 hover:text-blue-600 transition">Features</a>
-                    <a href="analyze.html" class="text-gray-700 hover:text-blue-600 transition">Analyze</a>
-                    <a href="resume.html" class="text-gray-700 hover:text-blue-600 transition">Resume</a>
-                    <div class="relative">
+                <div
+                    class="desktop-nav-links flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-black uppercase tracking-widest">
+                    <a href="index.html" class="text-white/60 hover:text-white transition">Home</a>
+                    <a href="features.html" class="text-white/60 hover:text-white transition">Features</a>
+                    <a href="analyze.html" class="text-white/60 hover:text-white transition">Analyze</a>
+                    <a href="resume.html" class="text-white/60 hover:text-white transition">Resume</a>
+                    <div class="relative pt-1">
                         <button onclick="toggleNotifications()"
-                            class="text-gray-700 hover:text-blue-600 transition relative">
+                            class="text-white/60 hover:text-white transition relative">
                             <span class="text-xl">🔔</span>
                             <span id="notifBadge"
                                 class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center notification-badge">0</span>
@@ -64,8 +70,27 @@
                         Logout
                     </button>
                 </div>
+                <!-- Hamburger Button (mobile only) -->
+                <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
             </div>
         </div>
+    </nav>
+
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <!-- Mobile Nav Drawer -->
+    <nav class="mobile-nav-drawer" id="mobileNavDrawer">
+        <a href="index.html">🏠 Home</a>
+        <a href="features.html">✨ Features</a>
+        <a href="analyze.html">🔍 Analyze</a>
+        <a href="resume.html">📄 Resume</a>
+        <button onclick="logout(); return false;"
+            style="cursor:pointer;background:linear-gradient(135deg,#ef4444,#ec4899);color:white;border:none;margin-top:12px;">🚪
+            Logout</button>
     </nav>
 
     <!-- Notifications Panel -->
@@ -589,7 +614,32 @@
             a.download = 'careersafe_history.json';
             a.click();
         }
+
+        // Hamburger menu
+        (function () {
+            const btn = document.getElementById('hamburgerBtn');
+            const drawer = document.getElementById('mobileNavDrawer');
+            const overlay = document.getElementById('mobileNavOverlay');
+            if (!btn) return;
+            function openMenu() {
+                btn.classList.add('open');
+                drawer.classList.add('open');
+                overlay.style.display = 'block';
+                requestAnimationFrame(() => overlay.classList.add('open'));
+                document.body.style.overflow = 'hidden';
+            }
+            function closeMenu() {
+                btn.classList.remove('open');
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                document.body.style.overflow = '';
+            }
+            btn.addEventListener('click', () => btn.classList.contains('open') ? closeMenu() : openMenu());
+            overlay.addEventListener('click', closeMenu);
+        })();
     </script>
+
 </body>
 
 </html>

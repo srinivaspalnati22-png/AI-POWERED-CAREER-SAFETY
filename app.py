@@ -7,35 +7,84 @@ from datetime import datetime
 import json
 import mimetypes
 import random
+import os
+import time
+import logging
+from logging.handlers import RotatingFileHandler
+import traceback
+from functools import wraps
+from collections import defaultdict
 
 mimetypes.add_type('text/css', '.css')
 mimetypes.add_type('application/javascript', '.js')
 
 # =========================
-# CONFIG
+# SECURITY & CONFIG
 # =========================
-GEMINI_API_KEY = "AIzaSyBPMlm4y9E0XTFSJCVOilbq1ECD_hHixAw"
-genai.configure(api_key=GEMINI_API_KEY)
 
-# Setup logging
-import logging
+# Load API key from environment variables (SECURE)
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
+if GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+    except Exception as e:
+        print(f"Error configuring Gemini API: {e}")
+else:
+    print("WARNING: GEMINI_API_KEY not set. Set with: export GEMINI_API_KEY='your-key-here'")
+
+# Setup logging with better format and rotation
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('debug.log'),
+        RotatingFileHandler('app.log', maxBytes=10485760, backupCount=5),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
+# Rate limiting configuration
+RATE_LIMIT_REQUESTS = 100
+RATE_LIMIT_WINDOW = 3600
+request_history = defaultdict(list)
+
+# Input validation constants
+MAX_TEXT_LENGTH = 10000
+MAX_COMPANY_NAME_LENGTH = 500
+MAX_FILE_SIZE = 50 * 1024 * 1024
+
 app = Flask(__name__, static_folder='.', static_url_path='')
-# Configure CORS - Allow all origins for development
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
+# Rate limiting decorator
+def rate_limit(limit=10, window=60):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            client_ip = request.remote_addr
+            current_time = time.time()
+            request_history[client_ip] = [req_time for req_time in request_history[client_ip] if current_time - req_time < window]
+            if len(request_history[client_ip]) >= limit:
+                logger.warning(f"Rate limit exceeded for IP: {client_ip}")
+                return jsonify({"error": "Rate limit exceeded", "message": f"Max {limit} requests per {window}s"}), 429
+            request_history[client_ip].append(current_time)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# Configure CORS - allow all origins for Vercel/Render deployment
+CORS(app,
+     resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}},
+     supports_credentials=False,
+     max_age=86400)
+
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok", "service": "CareerSafe API"}), 200
 
 @app.route('/')
 def home():
-    return app.send_static_file('index.html')
+    return jsonify({"status": "ok", "message": "CareerSafe Backend API", "docs": "/health"})
 
 # Default test data for easy testing
 DEFAULT_TEST_DATA = {
@@ -394,255 +443,259 @@ Be direct, evidence-based, and protective of the user. Your analysis could save 
     }
 
 @app.route("/analyze", methods=["POST"]) 
+@rate_limit(limit=20, window=60)
 def analyze():
-    text = request.json.get("text", "")
-    if not text:
-        return jsonify({"error": "Text is required"}), 400
-
-    result = analyze_text(text)
-    return jsonify(result)
+    try:
+        data = request.get_json()
+        if not data or "text" not in data:
+            return jsonify({"error": "Text is required"}), 400
+        text = data.get("text", "").strip()
+        if len(text) == 0 or len(text) > MAX_TEXT_LENGTH:
+            return jsonify({"error": f"Text must be 1-{MAX_TEXT_LENGTH} characters"}), 400
+        logger.info(f"Analyzing text of length: {len(text)}")
+        result = analyze_text(text)
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"Error in analyze: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 # =========================
 # AI CAREER GUIDANCE
 # =========================
 @app.route("/career-guidance", methods=["POST"])
+@rate_limit(limit=15, window=60)
 def career_guidance():
-    skill = request.json.get("skill", "").lower().strip()
-    
-    # ========================================
-    # REALITY CHECK: Validate if career goal is practical
-    # ========================================
-    
-    # List of fictional characters, superheroes, and unrealistic career goals
-    fictional_keywords = [
-        # Superheroes & Comics
-        "iron man", "ironman", "superman", "batman", "spiderman", "spider-man", 
-        "hulk", "thor", "captain america", "black widow", "wonder woman", 
-        "flash", "aquaman", "green lantern", "deadpool", "wolverine",
+    try:
+        data = request.get_json()
+        if not data or "skill" not in data:
+            return jsonify({"error": "Skill is required"}), 400
+        skill = data.get("skill", "").lower().strip()
+        if len(skill) == 0 or len(skill) > 200:
+            return jsonify({"error": "Skill must be 1-200 characters"}), 400
+        logger.info(f"Career guidance for skill: {skill}")
         
-        # Anime & Cartoon Characters  
-        "doraemon", "naruto", "goku", "luffy", "pikachu", "pokemon", 
-        "mickey mouse", "donald duck", "spongebob", "tom and jerry",
-        "shinchan", "nobita", "dragon ball", "sailor moon", "hello kitty",
+        # List of fictional characters, superheroes, and unrealistic career goals
+        fictional_keywords = [
+            "iron man", "ironman", "superman", "batman", "spiderman", "spider-man",
+            "hulk", "thor", "captain america", "black widow", "wonder woman",
+            "flash", "aquaman", "green lantern", "deadpool", "wolverine",
+            "doraemon", "naruto", "goku", "luffy", "pikachu", "pokemon",
+            "mickey mouse", "donald duck", "spongebob", "tom and jerry",
+            "wizard", "sorcerer", "vampire", "werewolf", "dragon", "unicorn",
+            "fairy", "elf", "dwarf", "hobbit", "superhero", "super hero",
+            "mario", "sonic", "link", "zelda", "master chief", "kratos",
+            "god", "jesus", "santa", "easter bunny", "tooth fairy",
+            "king", "queen", "prince", "princess"
+        ]
         
-        # Fantasy & Mythical
-        "wizard", "sorcerer", "vampire", "werewolf", "dragon", "unicorn",
-        "fairy", "elf", "dwarf", "hobbit", "superhero", "super hero",
+        is_unrealistic = any(keyword in skill for keyword in fictional_keywords)
         
-        # Video Game Characters
-        "mario", "sonic", "link", "zelda", "master chief", "kratos",
+        # Special case: Check for "become" patterns indicating character aspirations
+        if "become" in skill or "be like" in skill or "i want to be" in skill:
+            # Extract the character/goal after these phrases
+            for keyword in fictional_keywords:
+                if keyword in skill:
+                    is_unrealistic = True
+                    break
         
-        # Other unrealistic
-        "god", "jesus", "santa", "easter bunny", "tooth fairy",
-        "king", "queen", "prince", "princess" # (unless specifically royal family context)
-    ]
-    
-    # Check if the input contains fictional/unrealistic keywords
-    is_unrealistic = any(keyword in skill for keyword in fictional_keywords)
-    
-    # Special case: Check for "become" patterns indicating character aspirations
-    if "become" in skill or "be like" in skill or "i want to be" in skill:
-        # Extract the character/goal after these phrases
-        for keyword in fictional_keywords:
-            if keyword in skill:
-                is_unrealistic = True
-                break
-    
-    # ========================================
-    # If unrealistic, provide helpful redirection
-    # ========================================
-    if is_unrealistic:
-        # Try to suggest realistic alternatives based on the fictional goal
-        suggestions_map = {
-            "iron man": {
-                "message": "While becoming Iron Man isn't possible, you can pursue careers that inspired the character!",
-                "alternatives": [
-                    {"title": "Robotics Engineer", "reason": "Design and build advanced robots and mechanical systems"},
-                    {"title": "Aerospace Engineer", "reason": "Work on aircraft, spacecraft, and flight suit technology"},
-                    {"title": "Mechanical Engineer", "reason": "Create innovative mechanical devices and systems"},
-                    {"title": "Biomedical Engineer", "reason": "Develop prosthetics and human augmentation technology"}
-                ]
-            },
-            "superman": {
-                "message": "Superman is fictional, but you can help people in powerful ways!",
-                "alternatives": [
-                    {"title": "Emergency Medical Technician (EMT)", "reason": "Save lives and help people in emergencies"},
-                    {"title": "Firefighter", "reason": "Rescue people from dangerous situations"},
-                    {"title": "Aerospace Physicist", "reason": "Study flight, propulsion, and space exploration"},
-                    {"title": "Social Worker", "reason": "Help vulnerable people and make a real difference"}
-                ]
-            },
-            "doraemon": {
-                "message": "Doraemon is a cartoon character, but you can create amazing inventions!",
-                "alternatives": [
-                    {"title": "Robotics Engineer", "reason": "Design and build robots and AI systems"},
-                    {"title": "Inventor / Product Designer", "reason": "Create innovative gadgets and solve problems"},
-                    {"title": "AI/ML Engineer", "reason": "Build intelligent systems and automation"},
-                    {"title": "Mechanical Engineer", "reason": "Design mechanical devices and tools"}
-                ]
-            },
-            "wizard": {
-                "message": "Magic isn't real, but science and technology can seem like magic!",
-                "alternatives": [
-                    {"title": "Software Engineer", "reason": "Code can create 'magic' - apps, websites, AI"},
-                    {"title": "Data Scientist", "reason": "Use data to predict the future and find hidden patterns"},
-                    {"title": "Special Effects Artist", "reason": "Create visual magic for movies and games"},
-                    {"title": "Chemist", "reason": "Mix compounds and create new materials (like alchemy!)"}
-                ]
-            }
-        }
-        
-        # Find matching suggestion or use generic
-        suggestion_data = None
-        for keyword, data in suggestions_map.items():
-            if keyword in skill:
-                suggestion_data = data
-                break
-        
-        # Default suggestion if no specific match
-        if not suggestion_data:
-            suggestion_data = {
-                "message": "That's not a realistic career path, but let's find something practical that matches your interests!",
-                "alternatives": [
-                    {"title": "Software Engineer", "reason": "Build technology that changes the world"},
-                    {"title": "Creative Professional", "reason": "Work in animation, game design, or content creation"},
-                    {"title": "Entrepreneur", "reason": "Create your own innovative business or product"},
-                    {"title": "Research Scientist", "reason": "Push the boundaries of what's possible"}
-                ]
-            }
-        
-        return jsonify({
-            "status": "unrealistic_career",
-            "skill_searched": skill,
-            "is_realistic": False,
-            "message": suggestion_data["message"],
-            "realistic_alternatives": suggestion_data["alternatives"],
-            "helpful_tip": "💡 Focus on real-world careers that align with your interests. What aspects of this character/goal excite you? The technology? Helping people? Adventure? We can find a real career that matches!"
-        })
-    
-    # ========================================
-    # Continue with normal career guidance for realistic inputs
-    # ========================================
-
-    if GEMINI_API_KEY and GEMINI_API_KEY != "PASTE_YOUR_GEMINI_API_KEY_HERE":
-        try:
-            system_instruction = """You are an expert Career Counselor and Learning Path Architect.
-            Your goal is to provide highly detailed, actionable career roadmaps for any given skill or job role.
-            
-            PROJECT MISSION: Provide the "Cleanest" and most "Professional" roadmap possible.
-            
-            For the given skill/role, provide:
-            1. Market Outlook: A professional assessment of the current job market demand.
-            2. Careers: 3 specific job titles related to this skill, with salary ranges and growth potential.
-            3. Detailed Roadmap: A 3-phase roadmap (Foundation, Specialization, Mastery).
-               - Each phase should have exactly 3 concrete steps.
-               - Each step MUST have:
-                 - title: The name of the skill/concept to learn.
-                 - notes: Detailed explanation of what to focus on and why it's important (2 sentences).
-                 - video_query: A specific, high-quality search query for YouTube that would yield the best tutorial for this exact step.
-            4. Salary Benchmarks: Entry, Mid, and Senior level estimates.
-            5. Difficulty Rating: 1-10 (as an integer).
-            6. Improvement Tips: 4 quick tips to accelerate learning.
-            
-            STRICT JSON FORMAT REQUIRMENT:
-            Return ONLY a valid JSON object. No other text.
-            {
-              "market_outlook": "string",
-              "careers": [{"title": "string", "salary": "string", "growth": "string", "skills": ["string"]}],
-              "detailed_roadmap": [
-                {
-                  "phase": "string",
-                  "steps": [{"title": "string", "notes": "string", "video_query": "string"}]
+        # ========================================
+        # If unrealistic, provide helpful redirection
+        # ========================================
+        if is_unrealistic:
+            # Try to suggest realistic alternatives based on the fictional goal
+            suggestions_map = {
+                "iron man": {
+                    "message": "While becoming Iron Man isn't possible, you can pursue careers that inspired the character!",
+                    "alternatives": [
+                        {"title": "Robotics Engineer", "reason": "Design and build advanced robots and mechanical systems"},
+                        {"title": "Aerospace Engineer", "reason": "Work on aircraft, spacecraft, and flight suit technology"},
+                        {"title": "Mechanical Engineer", "reason": "Create innovative mechanical devices and systems"},
+                        {"title": "Biomedical Engineer", "reason": "Develop prosthetics and human augmentation technology"}
+                    ]
+                },
+                "superman": {
+                    "message": "Superman is fictional, but you can help people in powerful ways!",
+                    "alternatives": [
+                        {"title": "Emergency Medical Technician (EMT)", "reason": "Save lives and help people in emergencies"},
+                        {"title": "Firefighter", "reason": "Rescue people from dangerous situations"},
+                        {"title": "Aerospace Physicist", "reason": "Study flight, propulsion, and space exploration"},
+                        {"title": "Social Worker", "reason": "Help vulnerable people and make a real difference"}
+                    ]
+                },
+                "doraemon": {
+                    "message": "Doraemon is a cartoon character, but you can create amazing inventions!",
+                    "alternatives": [
+                        {"title": "Robotics Engineer", "reason": "Design and build robots and AI systems"},
+                        {"title": "Inventor / Product Designer", "reason": "Create innovative gadgets and solve problems"},
+                        {"title": "AI/ML Engineer", "reason": "Build intelligent systems and automation"},
+                        {"title": "Mechanical Engineer", "reason": "Design mechanical devices and tools"}
+                    ]
+                },
+                "wizard": {
+                    "message": "Magic isn't real, but science and technology can seem like magic!",
+                    "alternatives": [
+                        {"title": "Software Engineer", "reason": "Code can create 'magic' - apps, websites, AI"},
+                        {"title": "Data Scientist", "reason": "Use data to predict the future and find hidden patterns"},
+                        {"title": "Special Effects Artist", "reason": "Create visual magic for movies and games"},
+                        {"title": "Chemist", "reason": "Mix compounds and create new materials (like alchemy!)"}
+                    ]
                 }
-              ],
-              "salary_benchmarks": {"entry": "string", "mid": "string", "senior": "string"},
-              "difficulty_rating": 7,
-              "improvement_tips": ["string"]
             }
-            """
-
-            model = genai.GenerativeModel(
-                model_name='gemini-2.0-flash-lite',
-                system_instruction=system_instruction
-            )
             
-            prompt = f"Generate a comprehensive career roadmap for someone wanting to learn: {skill}"
+            # Find matching suggestion or use generic
+            suggestion_data = None
+            for keyword, data in suggestions_map.items():
+                if keyword in skill:
+                    suggestion_data = data
+                    break
             
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.7,
-                    response_mime_type="application/json",
-                )
-            )
-            
-            data = json.loads(response.text)
+            # Default suggestion if no specific match
+            if not suggestion_data:
+                suggestion_data = {
+                    "message": "That's not a realistic career path, but let's find something practical that matches your interests!",
+                    "alternatives": [
+                        {"title": "Software Engineer", "reason": "Build technology that changes the world"},
+                        {"title": "Creative Professional", "reason": "Work in animation, game design, or content creation"},
+                        {"title": "Entrepreneur", "reason": "Create your own innovative business or product"},
+                        {"title": "Research Scientist", "reason": "Push the boundaries of what's possible"}
+                    ]
+                }
             
             return jsonify({
-                "status": "success",
+                "status": "unrealistic_career",
                 "skill_searched": skill,
-                "market_outlook": data.get("market_outlook", "Stable growth"),
-                "careers": data.get("careers", []),
-                "detailed_roadmap": data.get("detailed_roadmap", []),
-                "salary_benchmarks": data.get("salary_benchmarks", {}),
-                "difficulty_rating": data.get("difficulty_rating", 5),
-                "improvement_tips": data.get("improvement_tips", [])
+                "is_realistic": False,
+                "message": suggestion_data["message"],
+                "realistic_alternatives": suggestion_data["alternatives"],
+                "helpful_tip": "💡 Focus on real-world careers that align with your interests. What aspects of this character/goal excite you? The technology? Helping people? Adventure? We can find a real career that matches!"
             })
+        
+        # ========================================
+        # Continue with normal career guidance for realistic inputs
+        # ========================================
 
-        except Exception as e:
-            logger.error(f"Career AI Gemini Error: {e}")
-            # Fallback to basic response if Gemini fails
-            pass
+        if GEMINI_API_KEY and GEMINI_API_KEY != "PASTE_YOUR_GEMINI_API_KEY_HERE":
+            try:
+                system_instruction = """You are an expert Career Counselor and Learning Path Architect.
+                Your goal is to provide highly detailed, actionable career roadmaps for any given skill or job role.
+                
+                PROJECT MISSION: Provide the "Cleanest" and most "Professional" roadmap possible.
+                
+                For the given skill/role, provide:
+                1. Market Outlook: A professional assessment of the current job market demand.
+                2. Careers: 3 specific job titles related to this skill, with salary ranges and growth potential.
+                3. Detailed Roadmap: A 3-phase roadmap (Foundation, Specialization, Mastery).
+                   - Each phase should have exactly 3 concrete steps.
+                   - Each step MUST have:
+                     - title: The name of the skill/concept to learn.
+                     - notes: Detailed explanation of what to focus on and why it's important (2 sentences).
+                     - video_query: A specific, high-quality search query for YouTube that would yield the best tutorial for this exact step.
+                4. Salary Benchmarks: Entry, Mid, and Senior level estimates.
+                5. Difficulty Rating: 1-10 (as an integer).
+                6. Improvement Tips: 4 quick tips to accelerate learning.
+                
+                STRICT JSON FORMAT REQUIRMENT:
+                Return ONLY a valid JSON object. No other text.
+                {
+                  "market_outlook": "string",
+                  "careers": [{"title": "string", "salary": "string", "growth": "string", "skills": ["string"]}],
+                  "detailed_roadmap": [
+                    {
+                      "phase": "string",
+                      "steps": [{"title": "string", "notes": "string", "video_query": "string"}]
+                    }
+                  ],
+                  "salary_benchmarks": {"entry": "string", "mid": "string", "senior": "string"},
+                  "difficulty_rating": 7,
+                  "improvement_tips": ["string"]
+                }
+                """
 
-    # Fallback/Default Data (if Gemini is unavailable or fails)
-    careers_db = {
-        "python": [
-            {"title": "AI Engineer", "salary": "$120k-$180k", "growth": "High", "skills": ["Python", "ML", "TensorFlow"]},
-            {"title": "Backend Developer", "salary": "$90k-$140k", "growth": "High", "skills": ["Python", "Django", "API"]},
-            {"title": "Data Scientist", "salary": "$110k-$160k", "growth": "Very High", "skills": ["Python", "ML", "Statistics"]}
-        ],
-        "design": [
-            {"title": "UI/UX Designer", "salary": "$75k-$120k", "growth": "High", "skills": ["Figma", "User Research", "Prototyping"]},
-            {"title": "Product Designer", "salary": "$90k-$140k", "growth": "High", "skills": ["Design Systems", "Strategy", "UX"]},
-            {"title": "Graphic Designer", "salary": "$50k-$80k", "growth": "Medium", "skills": ["Adobe Suite", "Branding", "Typography"]}
-        ]
-    }
+                model = genai.GenerativeModel(
+                    model_name='gemini-2.0-flash-lite',
+                    system_instruction=system_instruction
+                )
+                
+                prompt = f"Generate a comprehensive career roadmap for someone wanting to learn: {skill}"
+                
+                response = model.generate_content(
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.7,
+                        response_mime_type="application/json",
+                    )
+                )
+                
+                data = json.loads(response.text)
+                
+                return jsonify({
+                    "status": "success",
+                    "skill_searched": skill,
+                    "market_outlook": data.get("market_outlook", "Stable growth"),
+                    "careers": data.get("careers", []),
+                    "detailed_roadmap": data.get("detailed_roadmap", []),
+                    "salary_benchmarks": data.get("salary_benchmarks", {}),
+                    "difficulty_rating": data.get("difficulty_rating", 5),
+                    "improvement_tips": data.get("improvement_tips", [])
+                })
 
-    # Simplified fallback logic
-    matched_careers = careers_db.get(skill, [
-        {"title": f"{skill.capitalize()} Specialist", "salary": "$70k-$110k", "growth": "Stable", "skills": [skill, "Productivity", "Strategy"]},
-        {"title": "Consultant", "salary": "$80k-$130k", "growth": "High", "skills": ["Analysis", "Communication", "Data"]}
-    ])
+            except Exception as e:
+                logger.error(f"Career AI Gemini Error: {e}")
+                # Fallback to basic response if Gemini fails
+                pass
 
-    return jsonify({
-        "status": "success",
-        "skill_searched": skill,
-        "market_outlook": "Stable growth with consistent demand.",
-        "careers": matched_careers,
-        "detailed_roadmap": [
-            {
-                "phase": "Foundation",
-                "steps": [
-                    {"title": "Core Fundamentals", "notes": "Master the basic syntax and concepts of the field.", "video_query": f"{skill} for absolute beginners tutorial"},
-                    {"title": "Tooling & Setup", "notes": "Set up your development environment and learn essential tools.", "video_query": f"best {skill} development environment setup"},
-                    {"title": "Simple Projects", "notes": "Apply what you've learned by building small, practical examples.", "video_query": f"beginner {skill} projects for portfolio"}
-                ]
-            }
-        ],
-        "salary_benchmarks": {
-            "entry": "$60k - $85k",
-            "mid": "$95k - $140k",
-            "senior": "$150k - $220k"
-        },
-        "difficulty_rating": 6,
-        "improvement_tips": [
-            "Build a consistent learning habit",
-            "Engage with the community",
-            "Focus on project-based learning",
-            "Keep your portfolio updated"
-        ]
-    })
+        # Fallback/Default Data (if Gemini is unavailable or fails)
+        careers_db = {
+            "python": [
+                {"title": "AI Engineer", "salary": "$120k-$180k", "growth": "High", "skills": ["Python", "ML", "TensorFlow"]},
+                {"title": "Backend Developer", "salary": "$90k-$140k", "growth": "High", "skills": ["Python", "Django", "API"]},
+                {"title": "Data Scientist", "salary": "$110k-$160k", "growth": "Very High", "skills": ["Python", "ML", "Statistics"]}
+            ],
+            "design": [
+                {"title": "UI/UX Designer", "salary": "$75k-$120k", "growth": "High", "skills": ["Figma", "User Research", "Prototyping"]},
+                {"title": "Product Designer", "salary": "$90k-$140k", "growth": "High", "skills": ["Design Systems", "Strategy", "UX"]},
+                {"title": "Graphic Designer", "salary": "$50k-$80k", "growth": "Medium", "skills": ["Adobe Suite", "Branding", "Typography"]}
+            ]
+        }
+
+        # Simplified fallback logic
+        matched_careers = careers_db.get(skill, [
+            {"title": f"{skill.capitalize()} Specialist", "salary": "$70k-$110k", "growth": "Stable", "skills": [skill, "Productivity", "Strategy"]},
+            {"title": "Consultant", "salary": "$80k-$130k", "growth": "High", "skills": ["Analysis", "Communication", "Data"]}
+        ])
+
+        return jsonify({
+            "status": "success",
+            "skill_searched": skill,
+            "market_outlook": "Stable growth with consistent demand.",
+            "careers": matched_careers,
+            "detailed_roadmap": [
+                {
+                    "phase": "Foundation",
+                    "steps": [
+                        {"title": "Core Fundamentals", "notes": "Master the basic syntax and concepts of the field.", "video_query": f"{skill} for absolute beginners tutorial"},
+                        {"title": "Tooling & Setup", "notes": "Set up your development environment and learn essential tools.", "video_query": f"best {skill} development environment setup"},
+                        {"title": "Simple Projects", "notes": "Apply what you've learned by building small, practical examples.", "video_query": f"beginner {skill} projects for portfolio"}
+                    ]
+                }
+            ],
+            "salary_benchmarks": {
+                "entry": "$60k - $85k",
+                "mid": "$95k - $140k",
+                "senior": "$150k - $220k"
+            },
+            "difficulty_rating": 6,
+            "improvement_tips": [
+                "Build a consistent learning habit",
+                "Engage with the community",
+                "Focus on project-based learning",
+                "Keep your portfolio updated"
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Error in career_guidance: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 
@@ -650,15 +703,22 @@ def career_guidance():
 # RESUME PDF AUTHENTICITY CHECK
 # =========================
 @app.route("/resume-check", methods=["POST"])
+@rate_limit(limit=10, window=60)
 def resume_check():
-    if "resume" not in request.files:
-        return jsonify({"error": "No file provided"}), 400
-    
-    file = request.files["resume"]
-    if file.filename == "":
-        return jsonify({"error": "No file selected"}), 400
-    
     try:
+        if "resume" not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        file = request.files["resume"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({"error": "Only PDF files supported"}), 400
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        if file_size > MAX_FILE_SIZE:
+            return jsonify({"error": "File size exceeds limit"}), 400
+        logger.info(f"Processing resume: {file.filename} ({file_size} bytes)")
         doc = fitz.open(stream=file.read(), filetype="pdf")
         text = ""
         for page in doc:
@@ -673,6 +733,101 @@ def resume_check():
                 "reasons": ["Unable to extract text from PDF"],
                 "message": "Please ensure the PDF contains readable text"
             }), 400
+
+        risk = 10
+        reasons = []
+        warnings = []
+        positives = []
+
+        # Check for suspicious patterns
+        suspicious_patterns = {
+            "excessive keywords": (len(re.findall(r'\b(?:expert|master|guru|ninja)\b', text)) > 5, 15),
+            "unverifiable experience": ("10+ years" in text or "15+ years" in text, 10),
+            "missing dates": (not re.search(r'\d{4}', text), 5),
+            "certification without proof": ("certified" in text and "certificate" not in text and "certification" not in text, 20),
+            "skill mismatch": (("python" in text and "javascript" in text and "java" in text and "c++" in text), 10),
+            "vague descriptions": (len(re.findall(r'\b(?:various|many|several|multiple)\b', text)) > 3, 8)
+        }
+
+        for pattern, (condition, score) in suspicious_patterns.items():
+            if condition:
+                risk += score
+                reasons.append(f"Potential issue: {pattern.replace('_', ' ').title()}")
+
+        # Check for positive indicators
+        positive_indicators = {
+            "education listed": ("education" in text or "university" in text or "degree" in text, "Has education section"),
+            "work history": (re.search(r'\d{4}.*\d{4}', text), "Has date ranges for experience"),
+            "specific skills": (len(re.findall(r'\b(?:python|javascript|react|node|sql|aws)\b', text)) > 3, "Lists specific technical skills"),
+            "contact info": (re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text), "Has contact information"),
+            "projects": ("project" in text or "portfolio" in text, "Mentions projects or portfolio")
+        }
+
+        for indicator, (condition, message) in positive_indicators.items():
+            if condition:
+                positives.append(message)
+
+        # Normalize risk
+        risk = min(100, risk)
+        
+        if risk < 30:
+            risk_level = "Low"
+            message = "Resume appears authentic with minor concerns"
+        elif risk < 60:
+            risk_level = "Medium"
+            message = "Resume has some areas that need verification"
+        else:
+            risk_level = "High"
+            message = "Resume has significant authenticity concerns"
+
+        suggestions = []
+        improvement_plan = []
+        
+        if risk < 30:
+            suggestions = [
+                "Tailor your resume for each job application (keywords + relevance)",
+                "Ensure LinkedIn profile matches resume and is up to date",
+                "Apply to roles that match your experience and network with recruiters"
+            ]
+        elif risk < 60:
+            suggestions = [
+                "Add specific achievements and quantify impact (e.g., improved X by Y%)",
+                "Include date ranges for employment and education",
+                "List relevant projects and provide links to code/portfolio",
+                "Add verifiable certifications or details for claimed certifications"
+            ]
+            improvement_plan = [
+                "Step 1: Add dates and contact information",
+                "Step 2: Replace vague words with measurable achievements",
+                "Step 3: Add 1-2 portfolio projects with descriptions and links",
+                "Step 4: Proofread and get peer feedback"
+            ]
+        else:
+            suggestions = [
+                "Review and remove unverifiable claims",
+                "Provide supporting evidence for certifications and roles",
+                "Add clear contact information and project links",
+                "Consider rebuilding resume with a template focused on clarity and verification"
+            ]
+            improvement_plan = [
+                "Step 1: Verify all dates and roles; remove inflated claims",
+                "Step 2: Add project links, GitHub, portfolio or published work",
+                "Step 3: Obtain verifiable certifications or references",
+                "Step 4: Reformat resume for clarity and include measurable outcomes"
+            ]
+
+        return jsonify({
+            "risk_percentage": risk,
+            "risk_level": risk_level,
+            "reasons": reasons if reasons else ["No major issues detected"],
+            "warnings": warnings,
+            "positives": positives,
+            "message": message,
+            "suggestions": suggestions,
+            "improvement_plan": improvement_plan,
+            "timestamp": datetime.now().isoformat(),
+            "word_count": len(text.split())
+        })
     except Exception as e:
         return jsonify({
             "error": f"Error reading PDF: {str(e)}",
@@ -682,113 +837,27 @@ def resume_check():
             "message": "Please ensure the file is a valid PDF"
         }), 400
 
-    risk = 10
-    reasons = []
-    warnings = []
-    positives = []
-
-    # Check for suspicious patterns
-    suspicious_patterns = {
-        "excessive keywords": (len(re.findall(r'\b(?:expert|master|guru|ninja)\b', text)) > 5, 15),
-        "unverifiable experience": ("10+ years" in text or "15+ years" in text, 10),
-        "missing dates": (not re.search(r'\d{4}', text), 5),
-        "certification without proof": ("certified" in text and "certificate" not in text and "certification" not in text, 20),
-        "skill mismatch": (("python" in text and "javascript" in text and "java" in text and "c++" in text), 10),
-        "vague descriptions": (len(re.findall(r'\b(?:various|many|several|multiple)\b', text)) > 3, 8)
-    }
-
-    for pattern, (condition, score) in suspicious_patterns.items():
-        if condition:
-            risk += score
-            reasons.append(f"Potential issue: {pattern.replace('_', ' ').title()}")
-
-    # Check for positive indicators
-    positive_indicators = {
-        "education listed": ("education" in text or "university" in text or "degree" in text, "Has education section"),
-        "work history": (re.search(r'\d{4}.*\d{4}', text), "Has date ranges for experience"),
-        "specific skills": (len(re.findall(r'\b(?:python|javascript|react|node|sql|aws)\b', text)) > 3, "Lists specific technical skills"),
-        "contact info": (re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text), "Has contact information"),
-        "projects": ("project" in text or "portfolio" in text, "Mentions projects or portfolio")
-    }
-
-    for indicator, (condition, message) in positive_indicators.items():
-        if condition:
-            positives.append(message)
-
-    # Normalize risk
-    risk = min(100, risk)
-    
-    if risk < 30:
-        risk_level = "Low"
-        message = "Resume appears authentic with minor concerns"
-    elif risk < 60:
-        risk_level = "Medium"
-        message = "Resume has some areas that need verification"
-    else:
-        risk_level = "High"
-        message = "Resume has significant authenticity concerns"
-
-    suggestions = []
-    improvement_plan = []
-    
-    if risk < 30:
-        suggestions = [
-            "Tailor your resume for each job application (keywords + relevance)",
-            "Ensure LinkedIn profile matches resume and is up to date",
-            "Apply to roles that match your experience and network with recruiters"
-        ]
-    elif risk < 60:
-        suggestions = [
-            "Add specific achievements and quantify impact (e.g., improved X by Y%)",
-            "Include date ranges for employment and education",
-            "List relevant projects and provide links to code/portfolio",
-            "Add verifiable certifications or details for claimed certifications"
-        ]
-        improvement_plan = [
-            "Step 1: Add dates and contact information",
-            "Step 2: Replace vague words with measurable achievements",
-            "Step 3: Add 1-2 portfolio projects with descriptions and links",
-            "Step 4: Proofread and get peer feedback"
-        ]
-    else:
-        suggestions = [
-            "Review and remove unverifiable claims",
-            "Provide supporting evidence for certifications and roles",
-            "Add clear contact information and project links",
-            "Consider rebuilding resume with a template focused on clarity and verification"
-        ]
-        improvement_plan = [
-            "Step 1: Verify all dates and roles; remove inflated claims",
-            "Step 2: Add project links, GitHub, portfolio or published work",
-            "Step 3: Obtain verifiable certifications or references",
-            "Step 4: Reformat resume for clarity and include measurable outcomes"
-        ]
-
-    return jsonify({
-        "risk_percentage": risk,
-        "risk_level": risk_level,
-        "reasons": reasons if reasons else ["No major issues detected"],
-        "warnings": warnings,
-        "positives": positives,
-        "message": message,
-        "suggestions": suggestions,
-        "improvement_plan": improvement_plan,
-        "timestamp": datetime.now().isoformat(),
-        "word_count": len(text.split())
-    })
-
 
 # =========================
 # COMPANY VERIFICATION
 # =========================
 @app.route("/verify-company", methods=["POST"])
+@rate_limit(limit=15, window=60)
 def verify_company():
-    company_name = request.json.get("company_name", "").strip()
-    if not company_name:
-        return jsonify({"error": "Company name is required"}), 400
-    
-    result = verify_company_data(company_name)
-    return jsonify(result)
+    try:
+        data = request.get_json()
+        if not data or "company_name" not in data:
+            return jsonify({"error": "Company name is required"}), 400
+        company_name = data.get("company_name", "").strip()
+        if len(company_name) == 0 or len(company_name) > MAX_COMPANY_NAME_LENGTH:
+            return jsonify({"error": f"Company name must be 1-{MAX_COMPANY_NAME_LENGTH} characters"}), 400
+        company_name = re.sub(r'[<>"\'{}]', '', company_name)
+        logger.info(f"Verifying company: {company_name}")
+        result = verify_company_data(company_name)
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"Error in verify_company: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 
@@ -1307,63 +1376,55 @@ def get_history():
 # BULK ANALYSIS
 # =========================
 @app.route("/bulk-analyze", methods=["POST"])
+@rate_limit(limit=5, window=60)
 def bulk_analyze():
-    """Analyze multiple job postings at once"""
-    data = request.json
-    texts = data.get("texts", [])
-    
-    if not texts or len(texts) == 0:
-        return jsonify({"error": "No texts provided"}), 400
-    
-    results = []
-    for text in texts:
-        # Reuse analyze logic
-        risk_score = 0
-        reasons = []
-        
-        scam_keywords = {
-            "urgent": 15, "guaranteed": 20, "registration fee": 40,
-            "send money": 50, "bank details": 45, "ssn": 50
-        }
-        
-        text_lower = text.lower()
-        for keyword, score in scam_keywords.items():
-            if keyword in text_lower:
-                risk_score += score
-                reasons.append(f"Contains suspicious keyword: '{keyword}'")
-        
-        risk_score = max(0, min(100, risk_score))
-        
-        results.append({
-            "text": text[:100] + "..." if len(text) > 100 else text,
-            "risk_percentage": risk_score,
-            "risk_level": "High" if risk_score >= 70 else "Medium" if risk_score >= 30 else "Low",
-            "reasons": reasons if reasons else ["No obvious scam indicators"]
-        })
-    
-    return jsonify({
-        "results": results,
-        "total": len(results),
-        "high_risk_count": sum(1 for r in results if r["risk_percentage"] >= 70)
-    })
+    """Analyze multiple texts at once"""
+    try:
+        data = request.get_json()
+        if not data or "texts" not in data:
+            return jsonify({"error": "Texts array required"}), 400
+        texts = data.get("texts", [])
+        if not texts or len(texts) == 0:
+            return jsonify({"error": "No texts provided"}), 400
+        if len(texts) > 50:
+            return jsonify({"error": "Max 50 texts per request"}), 400
+        results = []
+        for idx, text in enumerate(texts):
+            try:
+                if len(text) > MAX_TEXT_LENGTH:
+                    text = text[:MAX_TEXT_LENGTH]
+                result = analyze_text(text)
+                result["index"] = idx
+                results.append(result)
+            except Exception as e:
+                logger.warning(f"Error analyzing text {idx}: {e}")
+                results.append({"index": idx, "error": "Analysis failed", "risk_percentage": 0})
+        logger.info(f"Bulk analysis: {len(results)} texts")
+        return jsonify({"results": results, "total": len(results), "timestamp": datetime.now().isoformat()}), 200
+    except Exception as e:
+        logger.error(f"Error in bulk_analyze: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 # =========================
 # SEARCH FUNCTIONALITY
 # =========================
 @app.route("/search", methods=["POST"])
+@rate_limit(limit=30, window=60)
 def search():
-    """Search through analysis history"""
-    data = request.json
-    query = data.get("query", "").lower()
-    
-    # In production, this would search a database
-    # For now, return sample results
-    return jsonify({
-        "results": [],
-        "query": query,
-        "message": "Search functionality - would query database in production"
-    })
+    """Search history"""
+    try:
+        data = request.get_json()
+        if not data or "query" not in data:
+            return jsonify({"error": "Query required"}), 400
+        query = data.get("query", "").lower().strip()
+        if len(query) == 0 or len(query) > 200:
+            return jsonify({"error": "Query must be 1-200 chars"}), 400
+        logger.info(f"Search: {query}")
+        return jsonify({"results": [], "query": query, "timestamp": datetime.now().isoformat()}), 200
+    except Exception as e:
+        logger.error(f"Error in search: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 
@@ -1375,11 +1436,11 @@ def search():
 @app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint"""
-    return jsonify({
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0"
-    })
+    try:
+        return jsonify({"status": "healthy", "api": bool(GEMINI_API_KEY), "timestamp": datetime.now().isoformat(), "version": "1.0.0"}), 200
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        return jsonify({"status": "degraded", "error": str(e)}), 503
 
 
 # =========================
@@ -1387,22 +1448,41 @@ def health():
 # =========================
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({"error": "Endpoint not found"}), 404
+    logger.warning(f"404 Not Found: {request.path}")
+    return jsonify({"error": "Endpoint not found", "path": request.path, "status": 404}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({"error": "Internal server error"}), 500
+    logger.error(f"500 Error: {error}")
+    return jsonify({"error": "Internal server error", "status": 500}), 500
 
 @app.errorhandler(400)
 def bad_request(error):
-    return jsonify({"error": "Bad request"}), 400
+    logger.warning(f"400 Bad Request: {error}")
+    return jsonify({"error": "Bad request", "status": 400}), 400
+
+@app.errorhandler(429)
+def rate_limit_error(error):
+    logger.warning(f"429 Rate Limit: {request.remote_addr}")
+    return jsonify({"error": "Too many requests", "status": 429}), 429
 
 
 # =========================
-# RUN SERVER
+# APPLICATION STARTUP
 # =========================
 if __name__ == "__main__":
-    import os
-    # Use environment port for deployment (Render, Railway, Heroku, etc.)
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    logger.info("="*60)
+    logger.info("Starting CareerSafe Backend Server")
+    logger.info("="*60)
+    logger.info(f"API Key Configured: {bool(GEMINI_API_KEY)}")
+    logger.info(f"Rate Limiting: {RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW}s")
+    logger.info(f"Max Text Length: {MAX_TEXT_LENGTH} chars")
+    logger.info(f"Max File Size: {MAX_FILE_SIZE / (1024*1024):.0f}MB")
+    logger.info("="*60)
+    debug_mode = os.getenv('DEBUG', 'False').lower() == 'true'
+    try:
+        port = int(os.getenv('PORT', 5000))
+        app.run(host='0.0.0.0', port=port, debug=debug_mode, use_reloader=debug_mode)
+    except Exception as e:
+        logger.critical(f"Failed to start server: {e}")
+        raise

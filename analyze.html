@@ -54,7 +54,7 @@
                     <span>CareerSafe</span>
                 </h1>
                 <div
-                    class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-black uppercase tracking-widest">
+                    class="desktop-nav-links flex flex-wrap items-center gap-4 sm:gap-6 text-sm sm:text-base font-black uppercase tracking-widest">
                     <a href="index.html" class="text-white/60 hover:text-white transition">Home</a>
                     <a href="features.html" class="text-white/60 hover:text-white transition">Features</a>
                     <a href="analyze.html"
@@ -67,20 +67,44 @@
                         class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full font-semibold hover:from-purple-700 hover:to-pink-700 transition shadow-lg hidden"
                         id="dashboardBtn">Dashboard</a>
                 </div>
+                <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
             </div>
         </div>
     </nav>
 
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <nav class="mobile-nav-drawer" id="mobileNavDrawer">
+        <a href="index.html">🏠 Home</a>
+        <a href="features.html">✨ Features</a>
+        <a href="analyze.html">🔍 Analyze</a>
+        <a href="resume.html">📄 Resume</a>
+        <a href="login.html" class="mobile-cta" id="mobileLoginBtn">Get Started</a>
+        <a href="dashboard.html" class="mobile-cta hidden" id="mobileDashboardBtn">Dashboard</a>
+    </nav>
+
     <!-- Hero Content -->
     <div class="container mx-auto px-4 sm:px-10 py-12">
-        <div class="text-center mb-12 fade-up">
-            <h1 class="text-4xl sm:text-6xl font-black mb-6 text-white drop-shadow-2xl">
-                Powerful <span class="gradient-text">AI Analysis</span>
-            </h1>
-            <p class="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-lg">
-                Use our suite of tools to detect scams, verify professional identities, and plan your career path with
-                confidence.
-            </p>
+        <div class="flex flex-col md:flex-row items-center justify-between gap-12 mb-16 fade-up">
+            <div class="md:w-1/2 text-left">
+                <h1 class="text-4xl sm:text-6xl font-black mb-6 text-white drop-shadow-2xl lg:leading-tight">
+                    Powerful <span class="gradient-text">AI Analysis</span>
+                </h1>
+                <p class="text-xl text-white/90 leading-relaxed drop-shadow-lg font-medium">
+                    Use our suite of tools to detect scams, verify professional identities, and plan your career path
+                    with
+                    confidence.
+                </p>
+            </div>
+            <div class="md:w-1/2 flex justify-center floating hero-image-animate relative">
+                <div class="absolute inset-0 bg-cyan-500/20 blur-[100px] rounded-full mix-blend-overlay"></div>
+                <img src="assets/images/analyze_scan_1772726782529.png" alt="AI Scan Tool"
+                    class="w-full max-w-[450px] object-contain rounded-[3rem] shadow-[0_20px_50px_rgba(6,182,212,0.4)] border border-cyan-500/30 relative z-10 transition-all duration-300">
+            </div>
         </div>
 
         <!-- Tab Navigation -->
@@ -953,8 +977,46 @@
                     setTimeout(() => loader.remove(), 500);
                 }
             }, 300);
+
+            // Auth check for mobile nav
+            const user = localStorage.getItem('careersafe_user');
+            if (user) {
+                const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+                const mobileDashboardBtn = document.getElementById('mobileDashboardBtn');
+                const loginBtn = document.getElementById('loginBtn');
+                const dashboardBtn = document.getElementById('dashboardBtn');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (dashboardBtn) dashboardBtn.classList.remove('hidden');
+                if (mobileLoginBtn) mobileLoginBtn.classList.add('hidden');
+                if (mobileDashboardBtn) mobileDashboardBtn.classList.remove('hidden');
+            }
         });
+
+        // Hamburger menu
+        (function() {
+            const btn = document.getElementById('hamburgerBtn');
+            const drawer = document.getElementById('mobileNavDrawer');
+            const overlay = document.getElementById('mobileNavOverlay');
+            if (!btn) return;
+            function openMenu() {
+                btn.classList.add('open');
+                drawer.classList.add('open');
+                overlay.style.display = 'block';
+                requestAnimationFrame(() => overlay.classList.add('open'));
+                document.body.style.overflow = 'hidden';
+            }
+            function closeMenu() {
+                btn.classList.remove('open');
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                document.body.style.overflow = '';
+            }
+            btn.addEventListener('click', () => btn.classList.contains('open') ? closeMenu() : openMenu());
+            overlay.addEventListener('click', closeMenu);
+        })();
     </script>
+
 </body>
 
 </html>
