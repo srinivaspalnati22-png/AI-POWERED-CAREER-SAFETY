@@ -28,6 +28,22 @@
             "dest": "/api/index.py"
         },
         {
+            "src": "/login",
+            "dest": "/api/index.py"
+        },
+        {
+            "src": "/signup",
+            "dest": "/api/index.py"
+        },
+        {
+            "src": "/dashboard-stats",
+            "dest": "/api/index.py"
+        },
+        {
+            "src": "/history",
+            "dest": "/api/index.py"
+        },
+        {
             "src": "/assets/(.*)",
             "dest": "/assets/$1"
         },

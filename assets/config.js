@@ -1,19 +1,17 @@
-// ============================================================
-// CareerSafe - API Configuration
-// ============================================================
-
 const CONFIG = {
-    API_BASE: (function () {
-        const host = window.location.hostname;
-
-        // Local development
-        if (host === 'localhost' || host === '127.0.0.1') {
-            return 'http://127.0.0.1:5000';
-        }
-
-        // Vercel deployment — both frontend & backend share the same domain!
-        return '';
-    })()
+    // Automatically detect the base URL. If running locally, it uses localhost. 
+    // If deployed, it uses the deployment URL.
+    API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://127.0.0.1:5005'
+        : window.location.origin,
 };
 
-console.log('[CareerSafe] API Base configured successfully');
+// Check if running in a mobile environment
+const isMobileApp = window.Capacitor !== undefined;
+
+if (isMobileApp) {
+    console.log("Running in Mobile App Mode");
+    // Updated to use the computer's actual local IP so physical devices on Wi-Fi can connect
+    CONFIG.API_BASE = 'http://10.46.65.81:5005';
+}
+

@@ -137,31 +137,57 @@
             loginButton.disabled = true;
             loginButton.innerHTML = '<div class="loader-spinner !w-6 !h-6 !border-2 !border-t-white mx-auto"></div>';
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            try {
+                // First try to login
+                let res = await fetch(`${CONFIG.API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-            // Store user session
-            const userData = {
-                email: email,
-                name: email.split('@')[0],
-                loginTime: new Date().toISOString(),
-                avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`
-            };
+                // If not found, create the user implicitly for demo purposes
+                if (res.status === 401 && res.statusText !== "Unauthorized") {
+                    res = await fetch(`${CONFIG.API_BASE}/signup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                }
 
-            localStorage.setItem('careersafe_user', JSON.stringify(userData));
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Failed to authenticate');
+                }
 
-            // Initialize stats if not exists
-            if (!localStorage.getItem('careersafe_stats')) {
-                localStorage.setItem('careersafe_stats', JSON.stringify({
-                    analyses: 0,
-                    scams: 0,
-                    companies: 0,
-                    resumes: 0
-                }));
+                const data = await res.json();
+
+                // Store user session generated from DB
+                const userData = {
+                    ...data.user,
+                    loginTime: new Date().toISOString(),
+                    avatar: `https://ui-avatars.com/api/?name=${data.user.name}&background=random`
+                };
+
+                localStorage.setItem('careersafe_user', JSON.stringify(userData));
+
+                // Initialize stats if not exists
+                if (!localStorage.getItem('careersafe_stats')) {
+                    localStorage.setItem('careersafe_stats', JSON.stringify({
+                        analyses: 0,
+                        scams: 0,
+                        companies: 0,
+                        resumes: 0
+                    }));
+                }
+
+                // Redirect to dashboard
+                window.location.href = 'dashboard.html';
+
+            } catch (error) {
+                alert("Authentication Failed: " + error.message);
+                loginButton.disabled = false;
+                loginButton.innerHTML = 'Sign In to Dashboard';
             }
-
-            // Redirect to dashboard
-            window.location.href = 'dashboard.html';
         }
 
         // Hide loader

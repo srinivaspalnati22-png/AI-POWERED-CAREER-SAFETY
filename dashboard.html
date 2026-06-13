@@ -70,7 +70,6 @@
                         Logout
                     </button>
                 </div>
-                <!-- Hamburger Button (mobile only) -->
                 <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
                     <span class="hamburger-line"></span>
                     <span class="hamburger-line"></span>
@@ -82,15 +81,12 @@
 
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
-    <!-- Mobile Nav Drawer -->
     <nav class="mobile-nav-drawer" id="mobileNavDrawer">
         <a href="index.html">🏠 Home</a>
         <a href="features.html">✨ Features</a>
         <a href="analyze.html">🔍 Analyze</a>
         <a href="resume.html">📄 Resume</a>
-        <button onclick="logout(); return false;"
-            style="cursor:pointer;background:linear-gradient(135deg,#ef4444,#ec4899);color:white;border:none;margin-top:12px;">🚪
-            Logout</button>
+        <button onclick="logout()" class="mobile-cta" style="margin-top: 1rem; width: 100%; text-align: left;">Logout</button>
     </nav>
 
     <!-- Notifications Panel -->
@@ -341,7 +337,35 @@
         // Fallback loader removal after 3 seconds
         setTimeout(hideLoader, 3000);
 
-        document.addEventListener('DOMContentLoaded', () => {
+        async function loadDashboardData() {
+            try {
+                let userIdUrlParam = '';
+                const userDataStr = localStorage.getItem('careersafe_user');
+                if (userDataStr) {
+                    try {
+                        const userData = JSON.parse(userDataStr);
+                        if (userData.id) {
+                            userIdUrlParam = `?user_id=${userData.id}`;
+                        }
+                    } catch (e) { console.error('Error parsing user data:', e); }
+                }
+                const response = await fetch(CONFIG.API_BASE + '/dashboard-stats' + userIdUrlParam);
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (err) {
+                console.error('Failed to load dashboard data from DB:', err);
+            }
+            return {
+                total_analyses: 0,
+                high_risk_detected: 0,
+                companies_verified: 0,
+                resumes_checked: 0,
+                recent_activity: []
+            };
+        }
+
+        async function initDashboard() {
             try {
                 // Check auth
                 const user = localStorage.getItem('careersafe_user');
@@ -362,11 +386,13 @@
                     welcomeEl.textContent = `Welcome back, ${userData.name || 'User'}!`;
                 }
 
+                const data = await loadDashboardData();
+
                 // Initialize components safely
-                safeInit(loadStats);
-                safeInit(loadActivity);
-                safeInit(initCharts);
-                safeInit(updateSafetyScore);
+                safeInit(() => loadStats(data));
+                safeInit(() => loadActivity(data));
+                safeInit(() => initCharts(data));
+                safeInit(() => updateSafetyScore(data));
                 safeInit(loadSafetyTips);
                 safeInit(updateNotifications);
 
@@ -378,7 +404,9 @@
                 // Always hide loader once initialization sequence completes (or fails)
                 setTimeout(hideLoader, 500);
             }
-        });
+        }
+
+        document.addEventListener('DOMContentLoaded', initDashboard);
 
         function safeInit(fn) {
             try {
@@ -388,19 +416,26 @@
             }
         }
 
-        function loadStats() {
-            const stats = JSON.parse(localStorage.getItem('careersafe_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
+        function loadStats(data) {
             const prevStats = JSON.parse(localStorage.getItem('careersafe_prev_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
 
-            animateValue('statAnalyses', 0, stats.analyses || 0, 1000);
-            animateValue('statScams', 0, stats.scams || 0, 1000);
-            animateValue('statCompanies', 0, stats.companies || 0, 1000);
-            animateValue('statResumes', 0, stats.resumes || 0, 1000);
+            animateValue('statAnalyses', 0, data.total_analyses || 0, 1000);
+            animateValue('statScams', 0, data.high_risk_detected || 0, 1000);
+            animateValue('statCompanies', 0, data.companies_verified || 0, 1000);
+            animateValue('statResumes', 0, data.resumes_checked || 0, 1000);
 
-            updateTrend('trendAnalyses', stats.analyses, prevStats.analyses);
-            updateTrend('trendScams', stats.scams, prevStats.scams);
-            updateTrend('trendCompanies', stats.companies, prevStats.companies);
-            updateTrend('trendResumes', stats.resumes, prevStats.resumes);
+            updateTrend('trendAnalyses', data.total_analyses, prevStats.analyses);
+            updateTrend('trendScams', data.high_risk_detected, prevStats.scams);
+            updateTrend('trendCompanies', data.companies_verified, prevStats.companies);
+            updateTrend('trendResumes', data.resumes_checked, prevStats.resumes);
+
+            // update history
+            localStorage.setItem('careersafe_prev_stats', JSON.stringify({
+                analyses: data.total_analyses,
+                scams: data.high_risk_detected,
+                companies: data.companies_verified,
+                resumes: data.resumes_checked
+            }));
         }
 
         function updateTrend(elementId, current, previous) {
@@ -430,11 +465,10 @@
             window.requestAnimationFrame(step);
         }
 
-        function updateSafetyScore() {
-            const stats = JSON.parse(localStorage.getItem('careersafe_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
+        function updateSafetyScore(data) {
             let score = 100;
-            if (stats.analyses > 0) {
-                const scamRate = stats.scams / stats.analyses;
+            if (data.total_analyses > 0) {
+                const scamRate = data.high_risk_detected / data.total_analyses;
                 score = Math.max(50, Math.round(100 - (scamRate * 50)));
             }
             document.getElementById('safetyScoreValue').textContent = score;
@@ -445,20 +479,20 @@
             }
         }
 
-        function loadActivity() {
-            const history = JSON.parse(localStorage.getItem('careersafe_history') || '[]');
+        function loadActivity(data) {
+            const recentActivity = data.recent_activity || [];
             const activityList = document.getElementById('activityList');
             if (!activityList) return;
 
-            if (history.length === 0) {
+            if (recentActivity.length === 0) {
                 activityList.innerHTML = '<p class="text-gray-500 text-center py-8 italic font-medium">No recent activity. Start analyzing to see your history here!</p>';
                 return;
             }
 
-            activityList.innerHTML = history.slice(0, 10).map(item => {
-                const risk = item.data?.risk_percentage ?? 'N/A';
+            activityList.innerHTML = recentActivity.slice(0, 10).map(item => {
+                const risk = item.risk_score ?? 'N/A';
                 const date = new Date(item.timestamp).toLocaleDateString();
-                const typeName = item.type.replace('_', ' ').toUpperCase();
+                const typeName = item.scan_type.replace('_', ' ').toUpperCase();
 
                 return `
                     <div class="glass-card p-5 rounded-2xl flex justify-between items-center hover:bg-white/5 transition-all border-white/5">
@@ -481,10 +515,8 @@
             }).join('');
         }
 
-        function initCharts() {
+        function initCharts(data) {
             if (typeof Chart === 'undefined') return;
-
-            const stats = JSON.parse(localStorage.getItem('careersafe_stats') || '{"analyses": 0, "scams": 0, "companies": 0, "resumes": 0}');
 
             const ctx1 = document.getElementById('activityChart');
             if (ctx1) {
@@ -497,7 +529,7 @@
                         labels: ['ANALYSES', 'SCAMS', 'COMPANIES', 'RESUMES'],
                         datasets: [{
                             label: 'TOTAL',
-                            data: [stats.analyses, stats.scams, stats.companies, stats.resumes],
+                            data: [data.total_analyses, data.high_risk_detected, data.companies_verified, data.resumes_checked],
                             backgroundColor: ['#6366f1', '#f43f5e', '#10b981', '#a855f7'],
                             borderRadius: 12,
                             barThickness: 20
@@ -527,7 +559,7 @@
                     data: {
                         labels: ['THREATS', 'SECURE'],
                         datasets: [{
-                            data: [stats.scams, stats.analyses - stats.scams || 1],
+                            data: [data.high_risk_detected, Math.max(1, data.total_analyses - data.high_risk_detected)],
                             backgroundColor: ['#f43f5e', '#10b981'],
                             borderWidth: 0,
                             hoverOffset: 10
@@ -639,7 +671,6 @@
             overlay.addEventListener('click', closeMenu);
         })();
     </script>
-
 </body>
 
 </html>

@@ -18,9 +18,10 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Load Scripts -->
-    <!-- Load Scripts -->
     <link rel="stylesheet" href="assets/main.css">
     <script src="./assets/config.js"></script>
+    <script src="./assets/effects.js" defer></script>
+    <script src="./assets/analyze-splash.js?v=3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Google Maps API with callback -->
@@ -37,8 +38,66 @@
 </head>
 
 <body class="animate-gradient min-h-screen">
-    <!-- Loading Screen -->
-    <div id="pageLoader">
+    <!-- Video Animation Splash Screen -->
+    <div id="videoSplash" class="video-splash-container">
+        <!-- Video Background -->
+        <!-- High-Tech Canvas Background Analyzer -->
+        <canvas id="analyzerCanvas" class="absolute inset-0 z-0 w-full h-full border-0"></canvas>
+
+        <!-- Particle Effect Canvas -->
+        <canvas class="splash-particles"></canvas>
+
+        <!-- Dark Overlay with Advanced Gradient -->
+        <div class="splash-overlay"></div>
+
+        <!-- Animated Background Shapes -->
+        <div class="splash-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+        </div>
+
+        <!-- Glow Light Elements -->
+        <div class="splash-light-effect light-1"></div>
+        <div class="splash-light-effect light-2"></div>
+        <div class="splash-light-effect light-3"></div>
+
+        <!-- Splash Content -->
+        <div class="splash-content">
+            <!-- Animated Logo -->
+            <div class="splash-logo-container">
+                <div class="splash-logo">🛡️</div>
+            </div>
+
+            <!-- Brand Name with Advanced Glow -->
+            <h1 class="splash-title">CareerSafe</h1>
+
+            <!-- Tagline -->
+            <p class="splash-tagline">AI Analysis Suite Loading...</p>
+
+            <!-- Animated Loading Bar -->
+            <div class="splash-progress-container">
+                <div class="splash-progress-bar"></div>
+            </div>
+
+            <!-- Status Text with Enhanced Effects -->
+            <p class="splash-text">Initializing AI Tools...</p>
+
+            <!-- Animated Dots -->
+            <div class="splash-dots">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+
+            <!-- Percentage Counter -->
+            <div class="splash-percentage">0%</div>
+        </div>
+    </div>
+
+    <!-- Loading Screen (Fallback) -->
+    <div id="pageLoader" class="hidden">
         <div>
             <div class="loader-spinner mx-auto"></div>
             <p class="text-white text-xl font-semibold mt-6">Initializing AI Tools...</p>
@@ -1016,7 +1075,6 @@
             overlay.addEventListener('click', closeMenu);
         })();
     </script>
-
 </body>
 
 </html>

@@ -54,8 +54,6 @@ MAX_TEXT_LENGTH = 10000
 MAX_COMPANY_NAME_LENGTH = 500
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
-app = Flask(__name__, static_folder='.', static_url_path='')
-
 # Rate limiting decorator
 def rate_limit(limit=10, window=60):
     def decorator(f):
@@ -72,6 +70,141 @@ def rate_limit(limit=10, window=60):
         return decorated_function
     return decorator
 
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__, static_folder='.', static_url_path='')
+
+# Database configuration
+# On Vercel, the environment is read-only, except for /tmp.
+# So we write the SQLite database to /tmp/careersafe.db if running on Vercel.
+if os.getenv('VERCEL') == '1':
+    db_path = '/tmp/careersafe.db'
+else:
+    db_path = os.path.join(os.path.abspath(os.path.dirname(__name__)), 'instance', 'careersafe.db')
+
+# Ensure the instance directory exists if not on Vercel
+if os.getenv('VERCEL') != '1':
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# =========================
+# DATABASE MODELS
+# =========================
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False) # Important: store a hash in production
+    name = db.Column(db.String(120), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to logs
+    activity_logs = db.relationship('ActivityLog', backref='user', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'name': self.name,
+            'created_at': self.created_at.isoformat()
+        }
+
+class ActivityLog(db.Model):
+    __tablename__ = 'activity_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    scan_type = db.Column(db.String(50), nullable=False) # e.g., 'job_scan', 'company_scan', 'resume_scan'
+    input_data = db.Column(db.Text, nullable=True) # User input text or query
+    risk_score = db.Column(db.Integer, nullable=True)
+    risk_level = db.Column(db.String(20), nullable=True)
+    result_summary = db.Column(db.Text, nullable=True) # Summary of findings
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'scan_type': self.scan_type,
+            'input_data': self.input_data[:100] + '...' if self.input_data and len(self.input_data) > 100 else self.input_data,
+            'risk_score': self.risk_score,
+            'risk_level': self.risk_level,
+            'result_summary': self.result_summary,
+            'timestamp': self.created_at.isoformat()
+        }
+
+with app.app_context():
+    db.create_all()
+
+# =========================
+# AUTHENTICATION ENDPOINTS
+# =========================
+@app.route('/login', methods=['POST'])
+@rate_limit(limit=10, window=60)
+def login():
+    try:
+        data = request.get_json()
+        if not data or not data.get('email') or not data.get('password'):
+            return jsonify({"error": "Email and password are required"}), 400
+            
+        email = data.get('email').strip().lower()
+        password = data.get('password')
+        
+        # Check if user exists
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.password == password:
+            return jsonify({
+                "message": "Login successful",
+                "user": user.to_dict()
+            }), 200
+            
+        return jsonify({"error": "Invalid email or password"}), 401
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/signup', methods=['POST'])
+@rate_limit(limit=5, window=60)
+def signup():
+    try:
+        data = request.get_json()
+        if not data or not data.get('email') or not data.get('password'):
+            return jsonify({"error": "Email and password are required"}), 400
+            
+        email = data.get('email').strip().lower()
+        password = data.get('password')
+        name = data.get('name', email.split('@')[0])
+        
+        # check if exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"error": "Email already registered"}), 400
+            
+        # create new
+        new_user = User(
+            email=email,
+            password=password,
+            name=name
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Registration successful",
+            "user": new_user.to_dict()
+        }), 201
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+
 # Configure CORS - allow all origins for Vercel/Render deployment
 CORS(app,
      resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}},
@@ -79,6 +212,9 @@ CORS(app,
      max_age=86400)
 
 
+@app.route('/')
+def home():
+    return jsonify({"status": "ok", "message": "CareerSafe Backend API", "docs": "/health"})
 
 # Default test data for easy testing
 DEFAULT_TEST_DATA = {
@@ -713,7 +849,6 @@ def resume_check():
         if file_size > MAX_FILE_SIZE:
             return jsonify({"error": "File size exceeds limit"}), 400
         logger.info(f"Processing resume: {file.filename} ({file_size} bytes)")
-        
         # Read PDF using PyPDF2 (Vercel friendly)
         pdf_file = io.BytesIO(file.read())
         reader = PyPDF2.PdfReader(pdf_file)
@@ -1349,13 +1484,34 @@ def get_test_data():
 # =========================
 @app.route("/dashboard-stats", methods=["GET"])
 def dashboard_stats():
-    return jsonify({
-        "total_analyses": 0,
-        "high_risk_detected": 0,
-        "companies_verified": 0,
-        "resumes_checked": 0,
-        "recent_activity": []
-    })
+    try:
+        total_analyses = ActivityLog.query.count()
+        high_risk_detected = ActivityLog.query.filter_by(risk_level='High').count()
+        companies_verified = ActivityLog.query.filter(
+            ActivityLog.scan_type == 'company_scan',
+            ActivityLog.result_summary.like('%Verified: True%')
+        ).count()
+        resumes_checked = ActivityLog.query.filter_by(scan_type='resume_scan').count()
+        
+        recent_logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(10).all()
+        recent_activity = [log.to_dict() for log in recent_logs]
+
+        return jsonify({
+            "total_analyses": total_analyses,
+            "high_risk_detected": high_risk_detected,
+            "companies_verified": companies_verified,
+            "resumes_checked": resumes_checked,
+            "recent_activity": recent_activity
+        })
+    except Exception as e:
+        logger.error(f"Failed to get dashboard stats: {e}")
+        return jsonify({
+            "total_analyses": 0,
+            "high_risk_detected": 0,
+            "companies_verified": 0,
+            "resumes_checked": 0,
+            "recent_activity": []
+        })
 
 
 # =========================
@@ -1363,11 +1519,27 @@ def dashboard_stats():
 # =========================
 @app.route("/history", methods=["GET"])
 def get_history():
-    """Get analysis history (would be stored in DB in production)"""
-    return jsonify({
-        "history": [],
-        "message": "History stored in localStorage on client side"
-    })
+    """Get analysis history stored in the DB"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('limit', 50, type=int)
+        
+        logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        history = [log.to_dict() for log in logs.items]
+        
+        return jsonify({
+            "history": history,
+            "total": logs.total,
+            "pages": logs.pages,
+            "current_page": page,
+            "message": "History loaded from database successfully"
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to get history: {e}")
+        return jsonify({
+            "history": [],
+            "error": "Failed to load history from database"
+        }), 500
 
 
 # =========================
@@ -1479,7 +1651,7 @@ if __name__ == "__main__":
     logger.info("="*60)
     debug_mode = os.getenv('DEBUG', 'False').lower() == 'true'
     try:
-        port = int(os.getenv('PORT', 5000))
+        port = int(os.getenv('PORT', 5005))
         app.run(host='0.0.0.0', port=port, debug=debug_mode, use_reloader=debug_mode)
     except Exception as e:
         logger.critical(f"Failed to start server: {e}")
